@@ -114,6 +114,7 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
       return false;
     }
     try {
+      let res;
       let payload;
       if (isEdit) {
         // 编辑模式
@@ -134,7 +135,7 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
         };
         console.log('payload', payload);
         
-        await updateCodeTableUsingPut(payload);
+        res=await updateCodeTableUsingPut(payload);
       } else {
         // 新增模式
         payload = {
@@ -148,10 +149,13 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
             name: values.name,
           },
         };
-        await addCodeTableUsingPost(payload);
+        res=await addCodeTableUsingPost(payload);
       }
-
-      message.success(isEdit ? '编辑成功' : '新增成功');
+      if(res.code===200){
+        message.success(isEdit ? '编辑成功' : '新增成功');
+      }else{
+        message.error(res.msg);
+      }
 
       // 清空数据
       setDataSource([]);

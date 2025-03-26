@@ -8,7 +8,7 @@ import DataAssetForm from './components/DataAssetForm';
 const { Content, Sider } = Layout;
 const { addUsingPost, deleteUsingDelete, editUsingPut, getTreeUsingGet, hasChildUsingGet, searchByNameUsingGet } = service.muluguanli;
 import service1 from '@/services/DataAsset'
-const { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet } = service1.zichanguanli
+const { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet,updateStatusUsingPut } = service1.zichanguanli
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -52,11 +52,14 @@ export default function DataAssetManagement() {
   const [chName, setChName] = useState(''); //中文名称
   const [enName, setEnName] = useState(''); //英文名称
   const [description, setDescription] = useState(''); //描述
-  const [directoryNameList, setDirectoryNameList] = useState<string[]>([]);
+  const [directoryNameList, setDirectoryNameList] = useState<string[]>([]);//目录名称列表
   const [currentNode, setCurrentNode] = useState<DirectoryTreeDataNode | null>(null); //当前操作的节点
   const [modalType, setModalType] = useState<'add' | 'edit'>('add'); //模态框类型
   const [hoveredNode, setHoveredNode] = useState<number | null>(null); //当前悬停的节点
   const [searchValue, setSearchValue] = useState<string>(''); //搜索框值
+  const [currentRecord, setCurrentRecord] = useState<CreateFormState | null>(null); // 当前操作的记录
+  const [isEdit, setIsEdit] = useState(false); // 是否是编辑模式
+
   //传递所有目录层级给子元素
   const [allDirectoryPaths, setAllDirectoryPaths] = useState<string[]>([]);
   // 获取所有目录的层级路径
@@ -146,7 +149,8 @@ const loadDataStandard = async (record: any) => {
             try {
               // 获取目录信息
               const res = await queryDirectoryListUsingGet({ name: record.id });
-            
+              console.log('目录信息res',res);
+              
               // 检查res.data是否是一个数组
               if (!Array.isArray(res.data)) {
                 message.error('目录数据格式错误');
@@ -265,20 +269,22 @@ const loadDataStandard = async (record: any) => {
               Modal.confirm({
                 title: '确认发布',
                 content: '确定要发布该码表吗？',
-                // onOk: async () => {
-                //   try {
-                  
-                //     await updateCodeTableStatusUsingPut({
-                //       codeTableIds: [record.id],
-                //       status: 1,
-                //     })
-
-                //     actionRef.current?.reload();
-                //     message.success('发布成功');
-                //   } catch (error) {
-                //     message.error('发布失败');
-                //   }
-                // },
+                onOk: async () => {
+                  try {
+                    console.log('record', record.id);
+                    
+                    const res= await updateStatusUsingPut({
+                      ids: record.id,
+                      status: 1,
+                    })
+                    console.log(res);
+                    
+                    actionRef.current?.reload();
+                    message.success('发布成功');
+                  } catch (error) {
+                    message.error('发布失败');
+                  }
+                },
               });
             }}
           >
@@ -292,18 +298,25 @@ const loadDataStandard = async (record: any) => {
               Modal.confirm({
                 title: '确认停用',
                 content: '确定要停用该码表吗？',
-                // onOk: async () => {
-                //   try {
-                //     await updateCodeTableStatusUsingPut({
-                //       codeTableIds: [record.id],
-                //       status: 2,
-                //     })
-                //     actionRef.current?.reload();
-                //     message.success('停用成功');
-                //   } catch (error) {
-                //     message.error('停用失败');
-                //   }
-                // },
+                onOk: async () => {
+                  try {
+                   const res= await updateStatusUsingPut({
+                      ids: record.id,
+                      status: 2,
+                    })
+                    console.log('res', res);
+                    
+                    if(res.code === 100200){
+                      actionRef.current?.reload();
+                      message.success('停用成功');
+                    }else{
+                      message.error('停用失败');
+                    }
+                    
+                  } catch (error) {
+                    message.error('停用失败');
+                  }
+                },
               });
             }}
           >
@@ -314,9 +327,11 @@ const loadDataStandard = async (record: any) => {
           <a
             key="edit"
             onClick={() => {
-              // setCurrentRecord(record); // 设置当前操作的记录
-              // setIsEdit(true); // 设置为编辑模式
-              // setModalVisible(true);
+              setCurrentRecord(record); // 设置当前操作的记录
+              console.log('record', record);
+              
+              setIsEdit(true); // 设置为编辑模式
+              setCreateModalVisible(true);
             }}
           >
             编辑
@@ -676,9 +691,15 @@ const loadDataStandard = async (record: any) => {
 
       {/* 创建表单的 Modal */}
       <DataAssetForm
-        allDirectoryPaths={allDirectoryPaths}
+        isEdit={isEdit}
+        record={currentRecord}
         onCancel={() => setCreateModalVisible(false)}
         modalVisible={createModalVisible}
+        onSuccess={() => {
+          setCreateModalVisible(false);
+          actionRef.current?.reload();
+          setAllDirectoryPaths([]);
+        }}
       />
 
       {/* 目录操作模态框 */}
