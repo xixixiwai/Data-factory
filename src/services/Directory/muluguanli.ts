@@ -47,6 +47,51 @@ export async function editUsingPut(
   });
 }
 
+/** 判断id是否存在 判断id是否存在 GET /directory/existId */
+export async function existIdUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: dataFactory.existIdUsingGETParams,
+  options?: { [key: string]: any },
+) {
+  return request<boolean>('/api/directory/existId', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
+/** 根据id获取所属目录 根据id获取所属目录 GET /directory/getResourceById */
+export async function getDirectoryUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: dataFactory.getDirectoryUsingGETParams,
+  options?: { [key: string]: any },
+) {
+  return request<dataFactory.Robject>('/api/directory/getResourceById', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
+/** 根据ids批量获取所属目录 根据ids批量获取所属目录 GET /directory/getResourcesByIds */
+export async function getResourcesByIdsUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: dataFactory.getResourcesByIdsUsingGETParams,
+  options?: { [key: string]: any },
+) {
+  return request<dataFactory.Robject>('/api/directory/getResourcesByIds', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
 /** 获取目录树形列表 获取目录树形列表 GET /directory/getTree */
 export async function getTreeUsingGet(options?: { [key: string]: any }) {
   return request<dataFactory.Robject>('/api/directory/getTree', {

@@ -38,6 +38,21 @@ declare namespace dataFactory {
     id: number;
   };
 
+  type existIdUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getDirectoryUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getResourcesByIdsUsingGETParams = {
+    /** ids */
+    ids: string;
+  };
+
   type hasChildUsingGETParams = {
     /** id */
     id: number;

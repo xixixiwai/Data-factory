@@ -1,14 +1,14 @@
 import { Layout, Tree, Form, Input, Table } from 'antd';
 import { ProTable, ActionType } from '@ant-design/pro-components';
-import { Tag, Button, message, Modal,TreeDataNode } from 'antd';
+import { Tag, Button, message, Modal, TreeDataNode } from 'antd';
 import { PlusCircleOutlined, MinusCircleOutlined, EditOutlined, DownOutlined, CarryOutOutlined } from '@ant-design/icons';
 import service from '@/services/Directory';
 import { useForm } from 'antd/es/form/Form';
 import DataAssetForm from './components/DataAssetForm';
 const { Content, Sider } = Layout;
-const { addUsingPost, deleteUsingDelete, editUsingPut, getTreeUsingGet, hasChildUsingGet, searchByNameUsingGet } = service.muluguanli;
+const { addUsingPost, deleteUsingDelete, editUsingPut, getTreeUsingGet, hasChildUsingGet, searchByNameUsingGet, getDirectoryUsingGet, getResourcesByIdsUsingGet } = service.muluguanli;
 import service1 from '@/services/DataAsset'
-const { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet,updateStatusUsingPut } = service1.zichanguanli
+const { addDataAssetUsingPost, deleteDataAssetUsingDelete, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut } = service1.zichanguanli
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -65,67 +65,63 @@ export default function DataAssetManagement() {
   // 获取所有目录的层级路径
   const getAllDirectoryPaths = (tree: DirectoryTreeDataNode[]): string[] => {
     const paths: string[] = [];
-  
+
     const traverseTree = (nodes: DirectoryTreeDataNode[], parentPath: string = '') => {
       for (const node of nodes) {
         // 构造当前节点的路径
         const currentPath = parentPath ? `${parentPath}\\${node.title}` : node.title;
         paths.push(currentPath);
-      
+
         // 如果有子节点，递归遍历子节点
         if (node.children && node.children.length > 0) {
           traverseTree(node.children, currentPath);
         }
       }
-    
-      
+
+
     };
     traverseTree(tree);// 调用遍历函数
     setAllDirectoryPaths(paths);
-    console.log('所有目录层级',allDirectoryPaths);
-    
+    console.log('所有目录层级', allDirectoryPaths);
+
     return paths;
   };
   // 根据目录id获取目录路径
-  const getDirectoryPath = (tree: DirectoryTreeDataNode[], directoryId: string) => {
-    // 定义路径数组
+  const getDirectoryPath = (tree: DirectoryTreeDataNode[], targetId: number): string => {
     const path: string[] = [];
-    // 定义递归函数，用于查找目录路径
-    const findPath = (nodes: DirectoryTreeDataNode[], id: string) => {
-      // 遍历节点数组
+
+    const traverse = (
+      nodes: DirectoryTreeDataNode[],
+      currentPath: string[]
+    ): boolean => {
       for (const node of nodes) {
-        // 如果节点id与目标id相等，则将节点title添加到路径数组中
-        if (node.id === id) {
-          path.unshift(node.title);
+        const newPath = [...currentPath, node.title as string];
+
+        if (node.id === targetId) {
+          path.push(...newPath);
           return true;
         }
-        // 如果节点有子节点，则递归调用findPath函数
-        if (node.children && node.children.length > 0) {
-          if (findPath(node.children, id)) {
-            path.unshift(node.title);
-            return true;
-          }
+
+        if (node.children?.length) {
+          if (traverse(node.children, newPath)) return true;
         }
       }
-      
-      // 如果没有找到目标id，则返回false
       return false;
     };
-    // 调用findPath函数，查找目录路径
-    findPath(tree, directoryId);
-    // 将路径数组转换为字符串，以'\'分隔
-    return path.join('\\');
+
+    traverse(tree, []);
+    return path.join(' / ');
   };
 
-// 加载数据标准信息
-const loadDataStandard = async (record: any) => {
-  try {
-    console.log('加载数据标准信息', record.dataFieldList);
-    // 根据需要设置状态
-  } catch (error) {
-    console.error('加载数据标准失败:', error);
-  }
-};
+  // 加载数据标准信息
+  const loadDataStandard = async (record: any) => {
+    try {
+      console.log('加载数据标准信息', record.dataFieldList);
+      // 根据需要设置状态
+    } catch (error) {
+      console.error('加载数据标准失败:', error);
+    }
+  };
 
   // 定义表格列
   const columns = [
@@ -136,43 +132,19 @@ const loadDataStandard = async (record: any) => {
       render: (text: any, record: any) => (
         <span
           style={{ cursor: 'pointer', color: 'blue' }}
-          // 在点击数据资产表中文名称时获取所有目录路径
           onClick={async () => {
-            console.log('打开模态框详细数据',record);
-            
+            // 处理多目录ID
+            const directoryIds = record.directoryId.split(',').map(Number);
+            const paths = directoryIds.map(id =>
+              getDirectoryPath(treeData, id)
+            );
+
             setDataAssetDetailVisible(true);
             setDataAssetDetail(record.dataFieldList);
             setChName(record.chName);
             setEnName(record.enName);
             setDescription(record.description);
-            loadDataStandard(record)
-            try {
-              // 获取目录信息
-              const res = await queryDirectoryListUsingGet({ name: record.id });
-              console.log('目录信息res',res);
-              
-              // 检查res.data是否是一个数组
-              if (!Array.isArray(res.data)) {
-                message.error('目录数据格式错误');
-                setDirectoryNameList([]);
-                return;
-              }
-            
-              // 收集所有目录路径
-              const directoryPaths = [];
-              for (let i = 0; i < res.data.length; i++) {
-                const directoryId = res.data[i].id;
-                const path = getDirectoryPath(treeData, directoryId);
-                directoryPaths.push(path);
-              }
-            
-              // 更新directoryNameList
-              setDirectoryNameList(directoryPaths);
-            } catch (error) {
-              console.error('获取目录路径失败:', error);
-              message.error('获取目录路径失败');
-              setDirectoryNameList([]);
-            }
+            setDirectoryNameList(paths);
           }}
         >
           {text}
@@ -187,38 +159,18 @@ const loadDataStandard = async (record: any) => {
         <span
           style={{ cursor: 'pointer', color: 'blue' }}
           onClick={async () => {
+            // 处理多目录ID
+            const directoryIds = record.directoryId.split(',').map(Number);
+            const paths = directoryIds.map(id =>
+              getDirectoryPath(treeData, id)
+            );
+
             setDataAssetDetailVisible(true);
             setDataAssetDetail(record.dataFieldList);
             setChName(record.chName);
             setEnName(record.enName);
             setDescription(record.description);
-          
-            try {
-              // 获取目录信息
-              const res = await queryDirectoryListUsingGet({ name: record.id });
-            
-              // 检查res.data是否是一个数组
-              if (!Array.isArray(res.data)) {
-                message.error('目录数据格式错误');
-                setDirectoryNameList([]);
-                return;
-              }
-            
-              // 收集所有目录路径
-              const directoryPaths = [];
-              for (let i = 0; i < res.data.length; i++) {
-                const directoryId = res.data[i].id;
-                const path = getDirectoryPath(treeData, directoryId);
-                directoryPaths.push(path);
-              }
-            
-              // 更新directoryNameList
-              setDirectoryNameList(directoryPaths);
-            } catch (error) {
-              console.error('获取目录路径失败:', error);
-              message.error('获取目录路径失败');
-              setDirectoryNameList([]);
-            }
+            setDirectoryNameList(paths);
           }}
         >
           {text}
@@ -262,6 +214,31 @@ const loadDataStandard = async (record: any) => {
       dataIndex: 'option',
       valueType: 'option',
       render: (_, record) => [
+        (record.status === '已停用') && (
+          <a onClick={() => {
+            Modal.confirm({
+
+              onOk: async () => {
+                try {
+                  console.log('record', record.id);
+
+                  const res = await updateStatusUsingPut({
+                    ids: record.id,
+                    status: 1,
+                  })
+                  console.log(res);
+
+                  actionRef.current?.reload();
+                  message.success('发布成功');
+                } catch (error) {
+                  message.error('发布失败');
+                }
+              },
+            });
+          }}
+          >
+
+          </a>),
         (record.status === '待发布' || record.status === '已停用') && (
           <a
             key="publish"
@@ -272,13 +249,13 @@ const loadDataStandard = async (record: any) => {
                 onOk: async () => {
                   try {
                     console.log('record', record.id);
-                    
-                    const res= await updateStatusUsingPut({
+
+                    const res = await updateStatusUsingPut({
                       ids: record.id,
                       status: 1,
                     })
                     console.log(res);
-                    
+
                     actionRef.current?.reload();
                     message.success('发布成功');
                   } catch (error) {
@@ -300,19 +277,19 @@ const loadDataStandard = async (record: any) => {
                 content: '确定要停用该码表吗？',
                 onOk: async () => {
                   try {
-                   const res= await updateStatusUsingPut({
+                    const res = await updateStatusUsingPut({
                       ids: record.id,
                       status: 2,
                     })
                     console.log('res', res);
-                    
-                    if(res.code === 100200){
+
+                    if (res.code === 100200) {
                       actionRef.current?.reload();
                       message.success('停用成功');
-                    }else{
+                    } else {
                       message.error('停用失败');
                     }
-                    
+
                   } catch (error) {
                     message.error('停用失败');
                   }
@@ -329,7 +306,7 @@ const loadDataStandard = async (record: any) => {
             onClick={() => {
               setCurrentRecord(record); // 设置当前操作的记录
               console.log('record', record);
-              
+
               setIsEdit(true); // 设置为编辑模式
               setCreateModalVisible(true);
             }}
@@ -344,16 +321,22 @@ const loadDataStandard = async (record: any) => {
               Modal.confirm({
                 title: '确认删除',
                 content: '确定要删除该码表吗？',
-                // onOk: async () => {
-                //   try {
-                //     const res = await deleteCodeTableUsingDelete({ id: record.id });
-                //     console.log('res', res);
-                //     actionRef.current?.reload();
-                //     message.success('删除成功');
-                //   } catch (error) {
-                //     message.error('删除失败');
-                //   }
-                // },
+                onOk: async () => {
+                  try {
+                    const res = await deleteDataAssetUsingDelete({ id: record.id });
+                    console.log('res', res);
+                    if (res.code === 100200) {
+
+                      message.success('删除成功');
+                      actionRef.current?.reload();
+                    } else {
+                      message.error('删除失败');
+                    }
+
+                  } catch (error) {
+                    message.error('删除失败');
+                  }
+                },
               });
             }}
           >
@@ -577,7 +560,7 @@ const loadDataStandard = async (record: any) => {
                   status: params.status,
                   searchValue: searchValue, // 传递搜索值
                 });
-                 console.log('res', res);
+                console.log('res', res);
                 return {
                   data: res.data.records,
                   success: true,
@@ -629,64 +612,64 @@ const loadDataStandard = async (record: any) => {
           </Form.Item>
         </Form>
         <strong>字段信息</strong>
-      <Table
-        pagination={false}
-        dataSource={DataAssetDetail}
-        columns={[
-          {
-            title: '字段英文名称',
-            dataIndex: 'enName',
-            key: 'enName',
-          },
-          {
-            title: '字段中文名称',
-            dataIndex: 'chName',
-            key: 'chName',
-          },
-          {
-            title: '字段说明',
-            dataIndex: 'description',
-            key: 'description',
-            render: (text: any, record: any) => record.description || '-',
-          },
-          {
-            title: '数据类型',
-            dataIndex: 'dataStandardVO.type',
-            key: 'type',
-            render: (text: any, record: any) => record.dataStandardVO?.type || '-',
-          },
-          {
-            title: '数据长度',
-            dataIndex: 'dataStandardVO.length',
-            key: 'length',
-            render: (text: any, record: any) => record.dataStandardVO?.length || '-',
-          },
-          {
-            title: '数据精度',
-            dataIndex: 'dataStandardVO.accuracy',
-            key: 'accuracy',
-            render: (text: any, record: any) => record.dataStandardVO?.accuracy || '-',
-          },
-          {
-            title: '默认值',
-            dataIndex: 'dataStandardVO.dftValue',
-            key: 'dftValue',
-            render: (text: any, record: any) => record.dataStandardVO?.dftValue || '-',
-          },
-          {
-            title: '取值范围',
-            dataIndex: 'dataStandardVO.valueRange',
-            key: 'valueRange',
-            render: (text: any, record: any) => record.dataStandardVO?.valueRange || '-',
-          },
-          {
-            title: '枚举范围',
-            dataIndex: 'dataStandardVO.codeNum',
-            key: 'codeNum',
-            render: (text: any, record: any) => record.dataStandardVO?.codeNum || '-',
-          }
-        ]}
-      />
+        <Table
+          pagination={false}
+          dataSource={DataAssetDetail}
+          columns={[
+            {
+              title: '字段英文名称',
+              dataIndex: 'enName',
+              key: 'enName',
+            },
+            {
+              title: '字段中文名称',
+              dataIndex: 'chName',
+              key: 'chName',
+            },
+            {
+              title: '字段说明',
+              dataIndex: 'description',
+              key: 'description',
+              render: (text: any, record: any) => record.description || '-',
+            },
+            {
+              title: '数据类型',
+              dataIndex: 'dataStandardVO.type',
+              key: 'type',
+              render: (text: any, record: any) => record.dataStandardVO?.type || '-',
+            },
+            {
+              title: '数据长度',
+              dataIndex: 'dataStandardVO.length',
+              key: 'length',
+              render: (text: any, record: any) => record.dataStandardVO?.length || '-',
+            },
+            {
+              title: '数据精度',
+              dataIndex: 'dataStandardVO.accuracy',
+              key: 'accuracy',
+              render: (text: any, record: any) => record.dataStandardVO?.accuracy || '-',
+            },
+            {
+              title: '默认值',
+              dataIndex: 'dataStandardVO.dftValue',
+              key: 'dftValue',
+              render: (text: any, record: any) => record.dataStandardVO?.dftValue || '-',
+            },
+            {
+              title: '取值范围',
+              dataIndex: 'dataStandardVO.valueRange',
+              key: 'valueRange',
+              render: (text: any, record: any) => record.dataStandardVO?.valueRange || '-',
+            },
+            {
+              title: '枚举范围',
+              dataIndex: 'dataStandardVO.codeNum',
+              key: 'codeNum',
+              render: (text: any, record: any) => record.dataStandardVO?.codeNum || '-',
+            }
+          ]}
+        />
       </Modal>
 
       {/* 创建表单的 Modal */}
