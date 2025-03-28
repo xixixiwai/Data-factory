@@ -488,7 +488,6 @@ export default function DataAssetManagement() {
   };
 
 
-
   return (
     <>
       <Button
@@ -534,6 +533,7 @@ export default function DataAssetManagement() {
               // 这里可以添加搜索逻辑，比如调用后端接口搜索
               const res = await searchByNameUsingGet({ name: value });
               console.log('搜索结果:', res);
+
               // 搜索后更新表格数据
               actionRef.current?.reload();
             }}
@@ -553,6 +553,7 @@ export default function DataAssetManagement() {
         </Sider>
         <Content>
           <ProTable
+
             columns={columns}
             pagination={{
               showTotal: (total) => `共${total}条`,
@@ -560,17 +561,27 @@ export default function DataAssetManagement() {
               showQuickJumper: true,
               pageSizeOptions: ['10', '20', '30', '40'],
             }}
+
+
             request={async (params = {}) => {
               try {
-                const res = await queryDataAssetListUsingPost({
+                console.log('params', params);
+                console.log('selectedValue', selectedValue);
+                console.log('searchValue', searchValue);
+                const data = {
                   chName: params.chName,
                   currentPage: params.current || 0,
                   pageSize: params.pageSize || 20,
-                  directoryName: selectedValue[0],
+                  directoryName: searchValue,
                   status: params.status,
-                  searchValue: searchValue, // 传递搜索值
+                  // searchValue: searchValue, // 传递搜索值
+                }
+                console.log('data', data);
+
+                const res = await queryDataAssetListUsingPost({
+                  ...data
                 });
-                console.log('res', res);
+                console.log('res1', res);
                 return {
                   data: res.data.records,
                   success: true,
@@ -582,6 +593,12 @@ export default function DataAssetManagement() {
             }}
             actionRef={actionRef}
             rowKey="id"
+            onReset={() => {
+              setSelectedValue([]); // 清空选中的目录
+              setSearchValue('');   // 清空搜索词
+              fetchTreeData();      // 重新加载原始目录树（如果需要）
+              actionRef.current?.reload(); // 重置表格数据
+            }}
           />
         </Content>
       </Layout>
