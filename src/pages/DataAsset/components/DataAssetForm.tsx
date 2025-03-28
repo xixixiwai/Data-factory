@@ -204,7 +204,10 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       valueType: 'option',
       render: (text, record, _, action) => [
         <a key="delete" onClick={() => {
-          setDirectoryData(prev => prev.filter(item => item.id !== record.id));
+          console.log('record.id', record.path, 'directoryData.id', directoryData.map(item => item.path), ':::::', record.path !== directoryData.map(item => item.path));
+
+          setDirectoryData(prev => prev.filter(item => item.path !== record.path));
+
         }}>
           删除
         </a>,
@@ -347,6 +350,12 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       // 新增
 
       form.resetFields();
+      form.setFieldsValue({
+        chName: '',
+        enName: '',
+        description: '',
+
+      })
       setDirectoryData([]);
       setDataSource([]);
 

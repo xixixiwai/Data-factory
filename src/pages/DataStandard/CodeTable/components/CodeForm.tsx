@@ -1,5 +1,5 @@
 import React, { PropsWithChildren, useState, useEffect } from 'react';
-import { message, Modal } from 'antd';
+import { Descriptions, message, Modal } from 'antd';
 import { Divider } from 'antd';
 import type { ProColumns } from '@ant-design/pro-components';
 import { ProForm, ProFormText, ProFormTextArea, EditableProTable, ProFormSelect } from '@ant-design/pro-components';
@@ -85,10 +85,10 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
           key="delete"
           onClick={() => {
             console.log('record.id', record.id);
-            console.log('dataSource', dataSource);                        
+            console.log('dataSource', dataSource);
             setDataSource(dataSource.filter((item) => item.id !== record.id));//删除行
             message.info('删除成功');
-            
+
           }}
         >
           删除
@@ -100,16 +100,16 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
   const handleFormFinish = async (values: any) => {
     console.log('DataSource:', dataSource); // 调试：检查 dataSource 是否正确
     //手动触发表单验证
-    try{
+    try {
       await form.validateFields();
-    }catch (error) {
+    } catch (error) {
       message.error('请填写必填项');
       return;
     }
     const isValid = validateTableData(dataSource);
     if (!isValid) return false;
     //类型检查
-    if(typeof values.status !== 'number') {
+    if (typeof values.status !== 'number') {
       message.error('状态必须为数字');
       return false;
     }
@@ -134,8 +134,8 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
           },
         };
         console.log('payload', payload);
-        
-        res=await updateCodeTableUsingPut(payload);
+
+        res = await updateCodeTableUsingPut(payload);
       } else {
         // 新增模式
         payload = {
@@ -149,11 +149,11 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
             name: values.name,
           },
         };
-        res=await addCodeTableUsingPost(payload);
+        res = await addCodeTableUsingPost(payload);
       }
-      if(res.code===200){
+      if (res.code === 200) {
         message.success(isEdit ? '编辑成功' : '新增成功');
-      }else{
+      } else {
         message.error(res.msg);
       }
 
@@ -172,12 +172,12 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
   };
 
   // 使用 useEffect 监听 record 和 isEdit 的变化，设置初始值
-    // 修改 useEffect 初始化逻辑
+  // 修改 useEffect 初始化逻辑
   useEffect(() => {
     if (isEdit && record) {
       // 确保状态值转换为数字
       const initialStatus = Number(record.status);
-      
+
       form.setFieldsValue({
         name: record.name,
         description: record.description,
@@ -187,7 +187,7 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
           id: item.id || `temp_${Math.random().toString(36).substr(2, 9)}`
         })) || []
       });
-      
+
       // 调试日志
       console.log('初始化状态值:', {
         source: record.status,
@@ -196,9 +196,11 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ 
+      form.setFieldsValue({
+        name: '',
         status: 0, // 设置默认值
-        codeMsgPList: [] 
+        description: '',
+        codeMsgPList: []
       });
     }
   }, [isEdit, record]);
@@ -209,10 +211,19 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
       title={isEdit ? "编辑码表" : "新增码表"}
       open={modalVisible}
       footer={null}
-      onCancel={onCancel}
+      onCancel={() => {
+        onCancel();
+        setDataSource([]);
+        setFormKey(formKey + 1); // 强制重新渲染表单
+      }}
+      onSuccess={() => {
+        onSuccess();
+        setDataSource([]);
+        setFormKey(formKey + 1); // 强制重新渲染表单
+      }}
     >
       <ProForm
-        
+
         form={form} // 绑定 form
         key={formKey} // 强制重新渲染表单
         onFinish={handleFormFinish}
@@ -245,10 +256,10 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
             }
           }}
           rules={[
-            { 
-              required: true, 
+            {
+              required: true,
               message: '请选择码表状态',
-            
+
             }
           ]}
           transform={(value) => Number(value)} // 提交时转换

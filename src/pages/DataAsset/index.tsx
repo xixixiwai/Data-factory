@@ -494,7 +494,10 @@ export default function DataAssetManagement() {
       <Button
         style={{ float: 'right' }}
         type="primary"
-        onClick={() => setCreateModalVisible(true)}
+        onClick={() => {
+          setCreateModalVisible(true)
+          setIsEdit(false)
+        }}
       >
         新增资产表
       </Button>
