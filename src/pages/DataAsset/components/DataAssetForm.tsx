@@ -2,7 +2,7 @@ import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Modal, Form, Input, Button, TreeSelect, message, Select } from 'antd';
 import { ProForm, EditableProTable, ProColumns } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
-import { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut } from '@/services/DataAsset/zichanguanli';
+import { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut, updateDataAssetUsingPut } from '@/services/DataAsset/zichanguanli';
 import services from '@/services/Directory';
 const { getTreeUsingGet, getDirectoryUsingGet, getResourcesByIdsUsingGet } = services.muluguanli;
 import services1 from '@/services/Catalog'
@@ -16,7 +16,7 @@ interface CreateFormProps {
 }
 
 interface DirectoryItem {
-  id: string;
+  id: number;
   path: string; // 用于存储目录路径
 }
 
@@ -69,6 +69,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
 
     keys.forEach((key) => {
       const path = getFullPathByKey(treeData, key);
+      console.log('选择目录path', path);
+
       if (path) {
         paths.push(path.join('\\'));
       }
@@ -84,32 +86,62 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       const chName = form.getFieldValue('chName');
       const enName = form.getFieldValue('enName');
       const description = form.getFieldValue('description');
-      const directoryIds = directoryData.map(item => item.id).join(',');
+      console.log('提交directoryData', directoryData.map(item => item.path));
+
+      const directoryIds = directoryData.map(item => item.path).join(',');
+      console.log('提交directoryIds', directoryIds);
+
       const daFieldList = dataSource.map((field) => ({
         chName: field.chName,
         enName: field.enName,
         description: field.description,
+        // dataStandardId: field.dataStandardId,
         dataStandardId: field.dataStandardId,
       }));
 
       // 准备请求参数
-      const params = {
+      const params1 = {
         chName,
         enName,
         description,
         directoryIds,
         daFieldList,
       };
+      const params2 = {
+        chName,
+        enName,
+        description,
+        directoryIds,
+        updateDaFieldLists: daFieldList,
+      };
 
-      // 发起请求
-      const response = await addDataAssetUsingPost(params);
+      //新增？编辑
+      if (isEdit) {
+        // 编辑
+        console.log('编辑', record, params2);
 
-      if (response.code === 100200) {
-        message.success('提交成功');
-        onCancel();
+        const response = await updateDataAssetUsingPut({ id: record.id, ...params2 });
+        console.log('response', response);
+        if (response.code === 100200) {
+          message.success('修改成功');
+          onCancel();
+        } else {
+          message.error('修改失败');
+        }
+
       } else {
-        message.error('提交失败');
+        // 发起请求
+        const response = await addDataAssetUsingPost(params1);
+
+        if (response.code === 100200) {
+          message.success('提交成功');
+          onCancel();
+        } else {
+          message.error('提交失败');
+        }
       }
+
+
     } catch (error) {
       message.error('提交失败');
       console.error('error', error);
@@ -157,11 +189,14 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
         // if (isEdit && record.path) {// 如果是编辑模式并且record.path存在
         //   return getDirectoryPaths(record.path[0]) || '';
         // } else 
-        if (record.index) {
-          return getDirectoryPaths(record.path[0]) || '';
-        } else {
-          return record.path || '';
-        }
+        //如果存在record.index这个字段,index为0也是存在
+        // if (record.index || record.index === 0) {
+        console.log('record.path[0]', record.path);
+
+        return getDirectoryPaths(record.path) || '';
+        // } else {
+        //   return record.path || '';
+        // }
       },
     },
     {
@@ -248,7 +283,11 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       try {
         const res = await getTreeUsingGet();
         if (res.data) {
+          console.log('res.data', res.data);
+
           const convertedTreeData = convertTreeData(res.data);
+          console.log('convertedTreeData', convertedTreeData);
+
           setTreeData(convertedTreeData);
         }
       } catch (error) {
@@ -288,18 +327,29 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       // 初始化目录数据
       const directoryIds = record.directoryId.split(',');
       const paths = getDirectoryPaths(directoryIds);
+      // const directories = directoryIds.map((id, index) => ({
+      //   id,
+      //   path: paths[index] || '',
+      // }));
+      console.log('directoryIds', directoryIds);
+
       const directories = directoryIds.map((id, index) => ({
-        id,
-        path: paths[index] || '',
+        id: Date.now().toString(), // 生成一个唯一的ID
+        path: id,
       }));
+      console.log('编辑', directories);
+
       setDirectoryData(directories);
 
       // 初始化字段数据
       setDataSource(record.dataFieldList || []);
     } else {
+      // 新增
+
       form.resetFields();
       setDirectoryData([]);
       setDataSource([]);
+
     }
   }, [isEdit, record]);
 
@@ -346,7 +396,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
           recordCreatorProps={{
             position: 'bottom',
             record: () => ({
-              id: `temp-${Date.now()}`, // 临时ID
+              id: Date.now(), // 临时ID
               path: ''
             }),
             creatorButtonText: '添加目录',
@@ -372,7 +422,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
           recordCreatorProps={{
             position: 'bottom',
             record: () => ({
-              id: Date.now().toString(),
+              id: Date.now(),
               chName: '',
               enName: '',
               description: '',

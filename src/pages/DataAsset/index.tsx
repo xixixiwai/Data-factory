@@ -134,10 +134,15 @@ export default function DataAssetManagement() {
           style={{ cursor: 'pointer', color: 'blue' }}
           onClick={async () => {
             // 处理多目录ID
+            console.log('record详情', record);
+
             const directoryIds = record.directoryId.split(',').map(Number);
+            console.log('目录ID', directoryIds);
+
             const paths = directoryIds.map(id =>
               getDirectoryPath(treeData, id)
             );
+            console.log('目录路径', paths);
 
             setDataAssetDetailVisible(true);
             setDataAssetDetail(record.dataFieldList);
@@ -145,6 +150,8 @@ export default function DataAssetManagement() {
             setEnName(record.enName);
             setDescription(record.description);
             setDirectoryNameList(paths);
+            console.log('目录名称列表', directoryNameList);
+
           }}
         >
           {text}
@@ -676,7 +683,11 @@ export default function DataAssetManagement() {
       <DataAssetForm
         isEdit={isEdit}
         record={currentRecord}
-        onCancel={() => setCreateModalVisible(false)}
+        onCancel={() => {
+          setCreateModalVisible(false);
+          actionRef.current?.reload();
+          setAllDirectoryPaths([]);
+        }}
         modalVisible={createModalVisible}
         onSuccess={() => {
           setCreateModalVisible(false);
