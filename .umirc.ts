@@ -57,10 +57,11 @@ export default defineConfig({
     //后端的接口地址，自行替换+/v2/api-docs
     // schemaPath: 'http://192.168.11.83:8083/v3/api-docs',
     // schemaPath: 'http://192.168.11.83:8088/v3/api-docs',
-    schemaPath: 'http://192.168.239.83:8085/v3/api-docs',
+    // schemaPath: 'http://192.168.239.83:8085/v3/api-docs',
     // schemaPath: 'http://192.168.79.83:8086/v3/api-docs',
+    schemaPath: 'http://192.168.183.83:8087/v3/api-docs',
     //希望在哪个文件夹生成
-    projectName: 'Directory',
+    projectName: 'Api',
     //命名空间qiao
     namespace: 'dataFactory',
   },

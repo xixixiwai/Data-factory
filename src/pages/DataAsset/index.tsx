@@ -367,6 +367,9 @@ export default function DataAssetManagement() {
           isLeaf: item.child?.length === 0,
         }));
       };
+      console.log('添加目录书res', res);
+      console.log('目录树数据', convertTreeData(res.data));
+
       setTreeData(convertTreeData(res.data || []));
     } catch (error) {
       console.error('获取目录树失败:', error);
@@ -526,11 +529,15 @@ export default function DataAssetManagement() {
             />
           </div>
           <Input.Search
+            allowClear
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)} // 更新搜索值
             placeholder="搜索目录"
             style={{ marginBottom: 16, width: '100%' }}
             onSearch={async (value) => {
+              console.log('搜索value', searchValue);
+
               setSearchValue(value);
-              // 这里可以添加搜索逻辑，比如调用后端接口搜索
               const res = await searchByNameUsingGet({ name: value });
               console.log('搜索结果:', res);
 
