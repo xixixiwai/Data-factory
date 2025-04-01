@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Form, Layout, Table, Tree, TreeDataNode } from 'antd';
-import { ProTable } from '@ant-design/pro-components';
+import React, { useEffect, useState, useRef } from 'react';
+import { Descriptions, Divider, Form, Input, Layout, Row, Table, Tree, TreeDataNode } from 'antd';
+import { ProTable, ActionType } from '@ant-design/pro-components';
 import { Tag, Button, message, Modal } from 'antd';
 import CreateForm from './components/CreateForm';
 import service from '@/services/Directory';
@@ -17,36 +17,55 @@ type DirectoryTreeDataNode = TreeDataNode & {
 };
 //数据详情
 interface DetailData {
-  id: number;
-  name: string;
+  /** 请求协议，如 HTTP、HTTPS 等,0是HTTP 1是HTTPS */
   agreement: number;
-  type: number;
-  method: number;
-  format: string;
+  /** 接口的详细说明 */
+  description?: string;
+  /** 接口编号 */
+  id: number;
+  /** IP 端口 */
   ip: string;
-  timeout: number;
+  /** 请求方式，如 GET、POST 等 0是GET 1是POST */
+  method: number;
+  /** 接口的名称，用于识别接口 */
+  name: string;
+  /** Path */
   path: string;
-  description: string;
+  /** 输入 body，JSON 类型 */
+  requestBodyList: Record<string, any>[];
+  /** 输入参数，JSON 类型 */
+  requestParamList: Record<string, any>[];
+  /** 输出参数，JSON 类型 */
+  responseList: Response[];
+  /** 接口的来源 */
+  source: string;
+  /** 判断更新的时候这个是否是草稿,3代表这个是草稿，不输入的话代表这个不是草稿 */
+  status?: number;
+  /** 超时时间，默认时间是30s */
+  timeout: number;
+  /** 接口分类目录编号，关联接口分类 */
+  type: number;
+
 }
 
 
 
 export default function ApiManagement() {
+  const actionRef = useRef<ActionType>(); // 用于刷新表格数据
   const [createModalVisible, handleModalVisible] = useState<boolean>(false); // 创建表单弹窗
   const [addjk, setAddjk] = useState<boolean>(false); // 添加接口分类弹窗
   const [treeData, setTreeData] = useState<any[]>([]); // 接口分类树形数据
+  const [testModalVisible, setTestModalVisible] = useState(false);//控制接口测试模态框
+  const [testData, setTestData] = useState<any[]>([]);//接口测试数据
+  // 在组件状态中添加：
+  const [testParams, setTestParams] = useState<Record<string, any>>({});
+  const [testResult, setTestResult] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   //详情框内数据
-  const [detailData, setDetailData] = useState<DetailData>({
-    id: 0,
-    name: '',
-    agreement: 0,
-    type: 0,
-    method: 0,
-    format: '',
-    ip: '',
-    timeout: 0,
-    path: '',
-    description: '',
+  const [detailData, setDetailData] = useState<Partial<DetailData>>({
+    requestParamList: [],
+    requestBodyList: [],
+    responseList: [],
   });
 
   const [detailModalVisible, setDetailModalVisible] = useState(false);  //详情框
@@ -101,18 +120,9 @@ export default function ApiManagement() {
           onClick={async () => {
             console.log('record详细', record);
             setDetailModalVisible(true);
-            setDetailData({
-              id: record.id,
-              name: record.name,
-              agreement: record.agreement,
-              type: record.type,
-              method: record.method,
-              format: record.format,
-              ip: record.ip,
-              timeout: record.timeout,
-              path: record.path,
-              description: record.description,
-            })
+            setDetailData(record);
+            console.log('detailData', detailData);
+
             console.log('详细数据', record);
 
           }}
@@ -165,9 +175,95 @@ export default function ApiManagement() {
       title: '操作',
       dataIndex: 'option',
       valueType: 'option',
-      render: (_, record) => [
-        <Button type="link">编辑</Button>,
-        <Button type="link">删除</Button>,
+      render: (_: any, record: any) => [
+        // <Button key={"edit"} type="link">编辑</Button>,
+        // <Button key={"del"} type="link">删除</Button>,
+        (record.status === '已停用' || record.status === '未发布') && (
+          <>
+            <a
+              key="publish"
+              onClick={() => {
+                Modal.confirm({
+                  title: '确认发布',
+                  content: '确定要发布该码表吗？',
+                  onOk: async () => {
+                    try {
+                      console.log('record', record.id);
+
+                      // const res = await updateStatusUsingPut({
+                      //   ids: record.id,
+                      //   status: 1,
+                      // })
+                      // console.log(res);
+
+                      // actionRef.current?.reload();
+                      message.success('发布成功');
+                    } catch (error) {
+                      message.error('发布失败');
+                    }
+                  },
+                });
+              }}
+            >
+              发布
+            </a>
+            <a
+              key="edit"
+              onClick={() => {
+                // setCurrentRecord(record); // 设置当前操作的记录
+                // console.log('record', record);
+
+                // setIsEdit(true); // 设置为编辑模式
+                // setCreateModalVisible(true);
+              }}
+            >
+              编辑
+            </a>
+          </>
+
+        ),
+        (record.status === '未发布') && (
+          <a
+            key="delete"
+            onClick={() => {
+              Modal.confirm({
+                title: '确认删除',
+                content: '确定要删除该码表吗？',
+                onOk: async () => {
+                  try {
+                    const res = await deleteUsingDelete({ id: record.id });
+                    console.log('res', res);
+                    if (res.code === 100200) {
+                      console.log('删除成功', actionRef);
+
+                      actionRef.current?.reload();
+                      message.success('删除成功');
+
+                    } else {
+                      message.error('删除失败');
+                    }
+
+                  } catch (error) {
+                    message.error('删除失败');
+                  }
+                },
+              });
+            }}
+          >
+            删除
+          </a>
+        ),
+        (record.status === '已发布' || record.status === '已停用' || record.status === '未发布') && (
+          <a
+            key="test"
+            onClick={() => {
+              setTestModalVisible(true);
+              setDetailData(record);
+            }}
+          >
+            接口测试
+          </a>
+        )
       ],
     },
   ];
@@ -238,7 +334,42 @@ export default function ApiManagement() {
     fetchTreeData()
   }, [])
 
+  // 测试按钮点击处理函数
+  const handleTest = async () => {
+    try {
+      setLoading(true);
 
+      // 构造请求参数
+      const params = {
+        id: detailData.id,
+        inputParam: Object.entries(testParams).map(([key, value]) => ({
+          key,
+          value
+        })),
+        inputBody: detailData.requestBodyList?.map(body => ({
+          name: body.name,
+          inputBody: Object.entries(testParams).map(([key, value]) => ({
+            key,
+            value
+          }))
+        })) || []
+      };
+      console.log('params', params);
+
+      const res = await testUsingPost(params);
+      console.log('res', res);
+
+      if (res.code === 100200) {
+        setTestResult(JSON.stringify(res.data, null, 2));
+      } else {
+        message.error(res.msg || '测试失败');
+      }
+    } catch (error) {
+      message.error('测试请求失败');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <>
       <Button
@@ -289,6 +420,7 @@ export default function ApiManagement() {
               pageSizeOptions: ['10', '20', '30', '40'],
             }}
             request={fetchTableData}
+            actionRef={actionRef}
           />
         </Content>
       </Layout>
@@ -298,6 +430,7 @@ export default function ApiManagement() {
         open={addjk}
         onCancel={() => setAddjk(false)}
         onOk={() => setAddjk(false)}
+
       >
         <input placeholder="请输入接口分类名称" />
       </Modal>
@@ -310,26 +443,39 @@ export default function ApiManagement() {
       />
       {/* 详情框 */}
       <Modal
-        bodyStyle={{ maxHeight: '80vh', overflowY: 'auto' }}
+        // style={{ maxHeight: '80vh', overflowY: 'auto' }}
         title="接口详情"
+        //固定title，其他下滑
+        styles={{
+          body: {
+            maxHeight: '80vh',
+            overflowY: 'auto',
+          },
+        }}
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false)
+          // setDetailData({})
+        }
+
+        }
         footer={null}
         width={1000}
       >
+        <br />
         <strong>基本信息</strong>
-        <Form style={{ display: 'flex', flexWrap: 'wrap' }} key={detailData.id} >
+        <Form style={{ display: 'flex', flexWrap: 'wrap', margin: 20 }} key={detailData.id} >
           <Form.Item label="接口名称" name="name" style={{ width: '50%' }}>
             <span>{detailData.name}</span>
           </Form.Item>
           <Form.Item label="请求协议" name="agreement" style={{ width: '50%' }}>
-            <span>{detailData.agreement}</span>
+            <span>{detailData.agreement === 0 ? 'HTTP' : 'HTTPS'}</span>
           </Form.Item>
           <Form.Item label="接口分类" name="type" style={{ width: '50%' }}>
             <span>{detailData.type}</span>
           </Form.Item>
           <Form.Item label="请求方式" name="method" style={{ width: '50%' }}>
-            <span>{detailData.method}</span>
+            <span>{detailData.method === 0 ? 'GET' : 'POST'}</span>
           </Form.Item>
           {/* 没有 */}
           <Form.Item label="支持格式" name="format" style={{ width: '50%' }}>
@@ -349,18 +495,19 @@ export default function ApiManagement() {
           </Form.Item>
         </Form>
         <hr />
+        <br />
         <strong>请求参数</strong>
         <Table
           columns={[
             {
               title: '参数名',
-              dataIndex: 'paramName',
-              key: 'paramName',
+              dataIndex: 'name',
+              key: 'name',
             },
             {
               title: '参数位置',
-              dataIndex: 'paramPosition',
-              key: 'paramPosition',
+              dataIndex: 'position',
+              key: 'position',
             },
             {
               title: '数据类型',
@@ -369,8 +516,8 @@ export default function ApiManagement() {
             },
             {
               title: '是否必填',
-              dataIndex: 'required',
-              key: 'required',
+              dataIndex: 'isRequired',
+              key: 'isRequired',
             },
             {
               title: '默认请求参数',
@@ -379,11 +526,14 @@ export default function ApiManagement() {
             },
             {
               title: '说明',
-              dataIndex: 'decs',
-              key: 'decs',
+              dataIndex: 'description',
+              key: 'description',
             }
 
           ]}
+          dataSource={detailData.requestParamList || []}
+          pagination={false}
+          style={{ margin: 20 }}
         >
         </Table>
         <strong>请求body</strong>
@@ -391,23 +541,27 @@ export default function ApiManagement() {
           columns={[
             {
               title: '参数名称',
-              dataIndex: 'paramBodyName',
-              key: 'paramBodyName',
+              dataIndex: 'name',
+              key: 'name',
             },
             {
               title: '数据类型',
-              dataIndex: 'dateType',
-              key: 'dateType',
+              dataIndex: 'dataType',
+              key: 'dataType',
             },
             {
               title: '参数说明',
-              dataIndex: 'decs',
-              key: 'decs',
+              dataIndex: 'description',
+              key: 'description',
             }
           ]}
+          dataSource={detailData.requestBodyList || []}
+          pagination={false}
+          style={{ margin: 20 }}
         >
         </Table>
         <hr />
+        <br />
         <strong>接口返回参数</strong>
         <Table
           columns={[
@@ -418,19 +572,131 @@ export default function ApiManagement() {
             },
             {
               title: '数据类型',
-              dataIndex: 'dateType',
-              key: 'dateType',
+              dataIndex: 'dataType',
+              key: 'dataType',
             },
             {
               title: '参数说明',
               dataIndex: 'description',
               key: 'description',
-            }
+            },
+
           ]}
+          dataSource={detailData.responseList || []}
+          //取消底部工具栏
+          pagination={false}
+          style={{ margin: 20 }}
+
         >
 
         </Table>
       </Modal >
+      {/* 接口测试模态框 */}
+      <Modal
+        title="接口测试"
+        open={testModalVisible}
+        onCancel={() => {
+          setTestModalVisible(false);
+          setTestParams({});
+          setTestResult('');
+        }}
+        footer={null}
+        width={1200}
+      >
+        <Layout style={{ background: '#fff' }}>
+          <Sider width={600} style={{ padding: 16, background: '#fff' }}>
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="接口名称">{detailData.name}</Descriptions.Item>
+              <Descriptions.Item label="请求协议">
+                {detailData.agreement === 0 ? 'HTTP' : 'HTTPS'}
+              </Descriptions.Item>
+              <Descriptions.Item label="请求方式">
+                {detailData.method === 0 ? 'GET' : 'POST'}
+              </Descriptions.Item>
+              <Descriptions.Item label="请求路径">
+                {detailData.path}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider orientation="left">输入参数</Divider>
+
+            <Table
+              columns={[
+                { title: '参数名', dataIndex: 'name' },
+                { title: '参数位置', dataIndex: 'position' },
+                { title: '必填', render: (_, r) => (r.isRequired ? '是' : '否') },
+                {
+                  title: '测试值',
+                  dataIndex: 'testValue',
+                  render: (_, record) => (
+                    <Input
+                      value={testParams[record.name] || ''}
+                      onChange={(e) =>
+                        setTestParams(prev => ({
+                          ...prev,
+                          [record.name]: e.target.value
+                        }))
+                      }
+                    />
+                  )
+                }
+              ]}
+              dataSource={detailData.requestParamList || []}
+              pagination={false}
+              size="small"
+            />
+
+            <Divider orientation="left">请求Body</Divider>
+
+            <Table
+              columns={[
+                { title: '参数名', dataIndex: 'name' },
+                { title: '类型', dataIndex: 'dataType' },
+                {
+                  title: '测试值',
+                  dataIndex: 'testValue',
+                  render: (_, record) => (
+                    <Input
+                      value={testParams[record.name] || ''}
+                      onChange={(e) =>
+                        setTestParams(prev => ({
+                          ...prev,
+                          [record.name]: e.target.value
+                        }))
+                      }
+                    />
+                  )
+                }
+              ]}
+              dataSource={detailData.requestBodyList || []}
+              pagination={false}
+              size="small"
+            />
+
+            <Button
+              type="primary"
+              onClick={handleTest}
+              loading={loading}
+              style={{ marginTop: 16 }}
+            >
+              执行测试
+            </Button>
+          </Sider>
+
+          <Content style={{ padding: 16, borderLeft: '1px solid #f0f0f0' }}>
+            <h4>测试结果</h4>
+            <pre style={{
+              background: '#f6f8fa',
+              padding: 16,
+              borderRadius: 4,
+              maxHeight: 600,
+              overflow: 'auto'
+            }}>
+              {testResult || '等待测试结果...'}
+            </pre>
+          </Content>
+        </Layout>
+      </Modal>
     </>
   );
 }

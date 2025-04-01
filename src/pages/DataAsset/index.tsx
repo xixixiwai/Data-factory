@@ -244,7 +244,6 @@ export default function DataAssetManagement() {
             });
           }}
           >
-
           </a>),
         (record.status === '待发布' || record.status === '已停用') && (
           <a
@@ -333,7 +332,7 @@ export default function DataAssetManagement() {
                     const res = await deleteDataAssetUsingDelete({ id: record.id });
                     console.log('res', res);
                     if (res.code === 100200) {
-
+                      console.log('删除成功', actionRef);
                       message.success('删除成功');
                       actionRef.current?.reload();
                     } else {

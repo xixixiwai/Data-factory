@@ -4,7 +4,7 @@ import { request } from '@umijs/max';
 
 /** 新增接口 新增接口 POST /interface-directory/addDir */
 export async function addDirUsingPost(
-  body: dataFactory.AddDirDTO,
+  body: dataFactory.xinzengjiekouxinxifengzhuanglei,
   options?: { [key: string]: any },
 ) {
   return request<dataFactory.Robject>('/api/interface-directory/addDir', {
@@ -94,7 +94,7 @@ export async function testUsingPost(
 
 /** 根据id更新接口 根据id更新接口 PUT /interface-directory/update */
 export async function updateUsingPut(
-  body: dataFactory.UpdateDirDTO,
+  body: dataFactory.gengxinjiekouxinxifengzhuanglei,
   options?: { [key: string]: any },
 ) {
   return request<dataFactory.Robject>('/api/interface-directory/update', {

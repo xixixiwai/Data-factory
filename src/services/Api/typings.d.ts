@@ -1,19 +1,4 @@
 declare namespace dataFactory {
-  type AddDirDTO = {
-    agreement: number;
-    description?: string;
-    ip: string;
-    method: number;
-    name: string;
-    path: string;
-    requestBody: Record<string, any>;
-    requestParams: Record<string, any>;
-    response: string;
-    source: string;
-    timeout: number;
-    type: number;
-  };
-
   type BatchCategorizeDTO = {
     directoryId: number;
     interfaceIds: number[];
@@ -22,6 +7,37 @@ declare namespace dataFactory {
   type deleteUsingDELETEParams = {
     /** id */
     id: number;
+  };
+
+  type gengxinjiekouxinxifengzhuanglei = {
+    /** 请求协议，如 HTTP、HTTPS 等,0是HTTP 1是HTTPS */
+    agreement: number;
+    /** 接口的详细说明 */
+    description?: string;
+    /** 接口编号 */
+    id: number;
+    /** IP 端口 */
+    ip: string;
+    /** 请求方式，如 GET、POST 等 0是GET 1是POST */
+    method: number;
+    /** 接口的名称，用于识别接口 */
+    name: string;
+    /** Path */
+    path: string;
+    /** 输入 body，JSON 类型 */
+    requestBodyList: Record<string, any>[];
+    /** 输入参数，JSON 类型 */
+    requestParamList: Record<string, any>[];
+    /** 输出参数，JSON 类型 */
+    responseList: Response[];
+    /** 接口的来源 */
+    source: string;
+    /** 判断更新的时候这个是否是草稿,3代表这个是草稿，不输入的话代表这个不是草稿 */
+    status?: number;
+    /** 超时时间，默认时间是30s */
+    timeout: number;
+    /** 接口分类目录编号，关联接口分类 */
+    type: number;
   };
 
   type InterfaceQueryDTO = {
@@ -139,29 +155,53 @@ declare namespace dataFactory {
     id: number;
   };
 
+  type Response = {
+    /** 下级返回参数 */
+    childList?: Response[];
+    /** 数据类型只能为(3-String、1-Int、2-Float、0-Object、4-Array) */
+    dataType?: number;
+    /** 参数描述 */
+    description?: string;
+    /** 参数名称 */
+    name?: string;
+  };
+
   type Robject = {
     code?: number;
     data?: Record<string, any>;
     msg?: string;
   };
 
-  type UpdateDirDTO = {
-    agreement: number;
-    description?: string;
-    id: number;
-    ip: string;
-    method: number;
-    name: string;
-    path: string;
-    requestBody: Record<string, any>;
-    requestParams: Record<string, any>;
-    response: string;
-    source: string;
-    timeout: number;
-    type: number;
-  };
-
   type View = {
     contentType?: string;
+  };
+
+  type xinzengjiekouxinxifengzhuanglei = {
+    /** 请求协议，如 HTTP、HTTPS 等,0是HTTP 1是HTTPS */
+    agreement: number;
+    /** 接口的详细说明 */
+    description?: string;
+    /** IP 端口 */
+    ip: string;
+    /** 请求方式，如 GET、POST 等 0是GET 1是POST */
+    method: number;
+    /** 接口的名称，用于识别接口 */
+    name: string;
+    /** Path */
+    path: string;
+    /** 输入 body，JSON 类型 */
+    requestBodyList: Record<string, any>[];
+    /** 输入参数，JSON 类型 */
+    requestParamList: Record<string, any>[];
+    /** 输出参数，JSON 类型 */
+    responseList: Response[];
+    /** 接口的来源,写死（数据服务、指标管理、决策引擎） */
+    source: string;
+    /** 判断新增的时候这个是否是草稿,3代表这个是草稿，不输入的话代表这个不是草稿 */
+    status?: number;
+    /** 超时时间，默认时间是30s */
+    timeout: number;
+    /** 接口分类目录编号，关联接口分类 */
+    type: number;
   };
 }
