@@ -90,7 +90,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
 
       const directoryIds = directoryData.map(item => item.path).join(',');
       console.log('提交directoryIds', directoryIds);
-
+      console.log('dataSource', dataSource);
       const daFieldList = dataSource.map((field) => ({
         chName: field.chName,
         enName: field.enName,
@@ -99,6 +99,14 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
         dataStandardId: field.dataStandardId,
       }));
 
+      const updateDaFieldLists = dataSource.map((field) => ({
+        chName: field.chName,
+        enName: field.enName,
+        description: field.description,
+        // dataStandardId: field.dataStandardId,
+        dataStandardId: field.dataStandardId,
+        id: field.id,
+      }))
       // 准备请求参数
       const params1 = {
         chName,
@@ -112,15 +120,25 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
         enName,
         description,
         directoryIds,
-        updateDaFieldLists: daFieldList,
+        updateDaFieldLists,
       };
 
       //新增？编辑
       if (isEdit) {
         // 编辑
-        console.log('编辑', record, params2);
+        console.log('编辑', record, params2,);
 
-        const response = await updateDataAssetUsingPut({ id: record.id, ...params2 });
+        const response = await updateDataAssetUsingPut({
+          id: record.id,
+          //  ...params2 
+          chName: params2.chName,
+          enName: params2.enName,
+          description: params2.description,
+          directoryIds: params2.directoryIds,
+          updateDaFieldLists: params2.updateDaFieldLists
+
+        });
+
         console.log('response', response);
         if (response.code === 100200) {
           message.success('修改成功');
@@ -132,6 +150,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       } else {
         // 发起请求
         const response = await addDataAssetUsingPost(params1);
+        console.log('response', response);
 
         if (response.code === 100200) {
           message.success('提交成功');
@@ -204,7 +223,6 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       valueType: 'option',
       render: (text, record, _, action) => [
         <a key="delete" onClick={() => {
-          console.log('record.id', record.path, 'directoryData.id', directoryData.map(item => item.path), ':::::', record.path !== directoryData.map(item => item.path));
 
           setDirectoryData(prev => prev.filter(item => item.path !== record.path));
 
@@ -269,7 +287,10 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       valueType: 'option',
       render: (text, record, _, action) => [
         <a key="delete" onClick={() => {
+          console.log('删除', dataSource.map(item => item.id) !== record.id);
+
           setDataSource(prev => prev.filter(item => item.id !== record.id));
+          // action?.deleteRecord?.(record.id);
         }}>
           删除
         </a>,
@@ -337,7 +358,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       console.log('directoryIds', directoryIds);
 
       const directories = directoryIds.map((id, index) => ({
-        id: Date.now().toString(), // 生成一个唯一的ID
+        id: Date.now(), // 生成一个唯一的ID
         path: id,
       }));
       console.log('编辑', directories);
@@ -427,7 +448,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
           rowKey="id"
           columns={daFieldListColumns}
           value={dataSource}
-          onChange={setDataSource}
+          onChange={(value) => setDataSource([...value])}
           recordCreatorProps={{
             position: 'bottom',
             record: () => ({
@@ -447,6 +468,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
             onDelete: (key) => {
               setDataSource(prev => prev.filter(item => item.id !== key));
             },
+
           }}
         />
       </ProForm>

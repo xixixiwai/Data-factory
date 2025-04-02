@@ -195,15 +195,12 @@ export default function DataAssetManagement() {
       dataIndex: 'status',
       key: 'status',
       type: 'select',
-      initialValue: '待发布',
       valueEnum: {
         待发布: { text: '待发布' },
         已发布: { text: '已发布' },
         已停用: { text: '已停用' },
       },
-      search: {
-        transform: (value: any) => ({ status: statusMap[value] })
-      },
+
       render: (text: any, record: any) => (
         <Tag color={record.status === '已发布' ? 'green' : record.status === '已停用' ? 'red' : 'orange'}>
           {record.status}
@@ -579,13 +576,20 @@ export default function DataAssetManagement() {
                   currentPage: params.current || 0,
                   pageSize: params.pageSize || 20,
                   directoryName: searchValue,
-                  status: params.status,
+                  status: params.status === '待发布' ? 0 : params.status === '已发布' ? 1 : params.status === '已停用' ? 2 : null,
+
                   // searchValue: searchValue, // 传递搜索值
                 }
                 console.log('data', data);
 
                 const res = await queryDataAssetListUsingPost({
-                  ...data
+                  // ...data
+                  chName: params.chName,
+                  currentPage: params.current || 0,
+                  pageSize: params.pageSize || 20,
+                  directoryName: searchValue,
+                  status: params.status === '待发布' ? 0 : params.status === '已发布' ? 1 : params.status === '已停用' ? 2 : null,
+
                 });
                 console.log('res1', res);
                 return {

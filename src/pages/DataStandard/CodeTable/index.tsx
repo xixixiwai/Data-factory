@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import CodeForm from './components/CodeForm';
 import { request } from '@umijs/max';
-import { ProTable, ActionType, ProColumns,ProFormUploadButton } from '@ant-design/pro-components';
-import { Tag, Button, message, Modal, Table,Upload } from 'antd';
+import { ProTable, ActionType, ProColumns, ProFormUploadButton } from '@ant-design/pro-components';
+import { Tag, Button, message, Modal, Table, Upload } from 'antd';
 import { PlusOutlined, ImportOutlined } from '@ant-design/icons';
 import services from '@/services/CodeTable';
-import CodeTableDetail from './components/codeTableDetail'; 
-const { queryCodeListUsingPost, deleteCodeTableUsingDelete,updateCodeTableStatusUsingPut,exportExcelUsingGet,importCodeTableUsingPost } = services.mabiaoguanli;
+import CodeTableDetail from './components/codeTableDetail';
+const { queryCodeListUsingPost, deleteCodeTableUsingDelete, updateCodeTableStatusUsingPut, exportExcelUsingGet, importCodeTableUsingPost } = services.mabiaoguanli;
 
 type CodeTable = {
   id: string;
@@ -104,15 +104,14 @@ export default function CodeTableManagement() {
       title: '码表状态',
       dataIndex: 'status',
       valueType: 'select',
-      initialValue: '已发布',
       valueEnum: {
         '待发布': { text: '待发布' },
         '已发布': { text: '已发布' },
         '已停用': { text: '已停用' },
       },
-      search: {
-        transform: (value) => ({ status: statusMap[value] }),// 将状态映射为数字
-      },
+      // search: {
+      //   transform: (value) => ({ status: statusMap[value] }),// 将状态映射为数字
+      // },
       render: (_, record) => (
         <Tag color={record.status === '已发布' ? 'green' : record.status === '已停用' ? 'red' : 'orange'}>
           {record.status}
@@ -139,7 +138,7 @@ export default function CodeTableManagement() {
                 content: '确定要发布该码表吗？',
                 onOk: async () => {
                   try {
-                  
+
                     await updateCodeTableStatusUsingPut({
                       codeTableIds: [record.id],
                       status: 1,
@@ -240,7 +239,7 @@ export default function CodeTableManagement() {
           try {
             const body: dataFactory.CodeQueryDTO = {
               name: params.name || '',
-              status: params.status || 0,
+              status: params.status === '待发布' ? 0 : params.status === '已发布' ? 1 : params.status === '已停用' ? 2 : -1,
               currentPage: params.current || 1,
               pageSize: params.pageSize || 20,
             };
@@ -249,7 +248,7 @@ export default function CodeTableManagement() {
             const response = await queryCodeListUsingPost(body);
             console.log('response', response);
             console.log('selectedRows', selectedRows);
-            
+
             return {
               data: response.data.records,
               total: response.data.total,
@@ -268,66 +267,66 @@ export default function CodeTableManagement() {
         headerTitle={
           <>
             <Button
-            key="batchPublish"
-            
-            onClick={() => {
-              Modal.confirm({
-                title: '确认批量发布',
-                content: `确定要发布选中的 ${selectedRows.length} 个码表吗？`,
-                onOk: async () => {
-                  try {
-                    await updateCodeTableStatusUsingPut({
-                      codeTableIds: selectedRows.map((row) => row.id),
-                      status: 1,
+              key="batchPublish"
+
+              onClick={() => {
+                Modal.confirm({
+                  title: '确认批量发布',
+                  content: `确定要发布选中的 ${selectedRows.length} 个码表吗？`,
+                  onOk: async () => {
+                    try {
+                      await updateCodeTableStatusUsingPut({
+                        codeTableIds: selectedRows.map((row) => row.id),
+                        status: 1,
+                      }
+                      )
+                      message.success('批量发布成功');
+                      //清空已选择的
+                      setSelectedRows([]);
+                      actionRef.current?.reload();
+                    } catch (error) {
+                      message.error('批量发布失败');
                     }
-                    )
-                    message.success('批量发布成功');
-                    //清空已选择的
-                    setSelectedRows([]);
-                    actionRef.current?.reload();
-                  } catch (error) {
-                    message.error('批量发布失败');
-                  }
-                },
-                onCancel() {
-                  console.log('Cancel');
-                },
-              });
-            }}
-          >
-            批量发布
-          </Button>
+                  },
+                  onCancel() {
+                    console.log('Cancel');
+                  },
+                });
+              }}
+            >
+              批量发布
+            </Button>
             <Button
-            key="batchDisable"
-            
-            onClick={() => {
-              Modal.confirm({
-                title: '确认批量停用',
-                content: selectedRows?.length?`确定要停用选中的 ${selectedRows.length} 个码表吗？`: '请选择要停用的码表',
-                onOk: async () => {
-                  try {
-                    await updateCodeTableStatusUsingPut({
-                      codeTableIds: selectedRows.map((row) => row.id),
-                      status: 2,
+              key="batchDisable"
+
+              onClick={() => {
+                Modal.confirm({
+                  title: '确认批量停用',
+                  content: selectedRows?.length ? `确定要停用选中的 ${selectedRows.length} 个码表吗？` : '请选择要停用的码表',
+                  onOk: async () => {
+                    try {
+                      await updateCodeTableStatusUsingPut({
+                        codeTableIds: selectedRows.map((row) => row.id),
+                        status: 2,
+                      }
+                      )
+                      message.success('批量停用成功');
+                      //清空已选择的
+                      setSelectedRows([]);
+                      actionRef.current?.reload();
+                    } catch (error) {
+                      message.error('批量停用失败');
                     }
-                    )
-                    message.success('批量停用成功');
-                    //清空已选择的
-                    setSelectedRows([]);
-                    actionRef.current?.reload();
-                  } catch (error) {
-                    message.error('批量停用失败');
-                  }
-                },
-                onCancel() {
-                  console.log('Cancel');
-                },
-              });
-            }}
-          >
-            批量停用
-          </Button>
-            
+                  },
+                  onCancel() {
+                    console.log('Cancel');
+                  },
+                });
+              }}
+            >
+              批量停用
+            </Button>
+
           </>
         }
         toolBarRender={() => [
@@ -338,7 +337,7 @@ export default function CodeTableManagement() {
           }}>
             新增码表
           </Button>,
-           <Upload
+          <Upload
             key="import"
             accept=".xlsx, .xls"
             beforeUpload={async (file) => {
@@ -361,41 +360,41 @@ export default function CodeTableManagement() {
             </Button>
           </Upload>,
           <Button
-          key="template"
-          onClick={async () => { // 移除无用参数 `res`
-            try {
-              // 1. 明确配置请求参数：要求返回二进制流
-              const response = await exportExcelUsingGet({
-                responseType: 'blob', // 关键配置
-                headers: {
-                  Accept: 'application/vnd.ms-excel' // 强制要求返回 Excel 格式
-                }
-              });
-            
-              console.log('response.data', response); // 检查数据是否为 Blob
-            
-              // 2. 直接使用 response.data 生成 Blob（无需 new Blob）
-              const url = window.URL.createObjectURL(response);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = '码表模板.xls'; // 与后端返回的 Content-Disposition 一致
-              link.style.display = 'none';
-            
-              document.body.appendChild(link);
-              link.click();
-            
-              // 3. 清理资源
-              window.URL.revokeObjectURL(url); // 释放内存
-              document.body.removeChild(link);
-            
-              message.success('下载成功');
-            } catch (error) {
-              message.error('下载失败');
-            }
-          }}
-        >
-          模板下载
-        </Button>
+            key="template"
+            onClick={async () => { // 移除无用参数 `res`
+              try {
+                // 1. 明确配置请求参数：要求返回二进制流
+                const response = await exportExcelUsingGet({
+                  responseType: 'blob', // 关键配置
+                  headers: {
+                    Accept: 'application/vnd.ms-excel' // 强制要求返回 Excel 格式
+                  }
+                });
+
+                console.log('response.data', response); // 检查数据是否为 Blob
+
+                // 2. 直接使用 response.data 生成 Blob（无需 new Blob）
+                const url = window.URL.createObjectURL(response);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = '码表模板.xls'; // 与后端返回的 Content-Disposition 一致
+                link.style.display = 'none';
+
+                document.body.appendChild(link);
+                link.click();
+
+                // 3. 清理资源
+                window.URL.revokeObjectURL(url); // 释放内存
+                document.body.removeChild(link);
+
+                message.success('下载成功');
+              } catch (error) {
+                message.error('下载失败');
+              }
+            }}
+          >
+            模板下载
+          </Button>
         ]}
       />
 

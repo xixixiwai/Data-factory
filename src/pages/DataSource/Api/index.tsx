@@ -57,6 +57,8 @@ export default function ApiManagement() {
   const [treeData, setTreeData] = useState<any[]>([]); // 接口分类树形数据
   const [testModalVisible, setTestModalVisible] = useState(false);//控制接口测试模态框
   const [testData, setTestData] = useState<any[]>([]);//接口测试数据
+  const [selectedRows, setSelectedRows] = useState<DetailData[]>(); // 用于存储选中的行数据（批量操作）
+  const [batchActionType, setBatchActionType] = useState<'publish' | 'disable'>(); // 用于存储批量操作类型
   // 在组件状态中添加：
   const [testParams, setTestParams] = useState<Record<string, any>>({});
   const [testResult, setTestResult] = useState<string>('');
@@ -419,8 +421,78 @@ export default function ApiManagement() {
               showQuickJumper: true,
               pageSizeOptions: ['10', '20', '30', '40'],
             }}
+            rowSelection={{
+              onChange: (_, selectedRows) => setSelectedRows(selectedRows),
+            }}
             request={fetchTableData}
             actionRef={actionRef}
+            headerTitle={
+              <>
+                <Button
+                  key="batchPublish"
+
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '确认批量发布',
+                      content: `确定要发布选中的 ${selectedRows.length} 个数据标准目录吗？`,
+                      onOk: async () => {
+                        try {
+                          await updateDataStandardStatusUsingPut({
+                            ids: selectedRows.map((row) => row.id),
+                            status: 1,
+                          }
+                          )
+                          message.success('批量发布成功');
+                          //清空已选择的
+                          setSelectedRows([]);
+                          actionRef.current?.reload();
+                          actionRef.current?.clearSelected?.(); // 清空已选择的行
+                        } catch (error) {
+                          message.error('批量发布失败');
+                        }
+                      },
+                      onCancel() {
+                        console.log('Cancel');
+                      },
+                    });
+                  }}
+                >
+                  批量发布
+                </Button>
+                <Button
+                  key="batchDisable"
+
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '确认批量停用',
+                      content: `确定要停用选中的 ${selectedRows.length} 个数据标准目录吗？`,
+                      onOk: async () => {
+                        // try {
+                        //   await updateDataStandardStatusUsingPut({
+                        //     ids: selectedRows.map((row) => row.id),
+                        //     status: 2,
+                        //   }
+                        //   )
+                        message.success('批量停用成功');
+                        //   //清空已选择的
+                        //   setSelectedRows([]);
+                        actionRef.current?.reload();
+                        actionRef.current?.clearSelected?.(); // 清空已选择的行 
+                        // } catch (error) {
+                        //   message.error('批量停用失败');
+                        // }
+                      },
+                      onCancel() {
+                        console.log('Cancel');
+                      },
+                    });
+                  }}
+                >
+                  批量停用
+                </Button>
+
+              </>
+            }
           />
         </Content>
       </Layout>
