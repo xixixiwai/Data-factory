@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message,Switch } from 'antd';
+import { Modal, Form, Input, Select, Button, message, Switch } from 'antd';
 import services from '@/services/Catalog';
-const {updateDataStandardUsingPut, addDataStandardUsingPost} = services.shujubiaozhunguanli;
+const { updateDataStandardUsingPut, addDataStandardUsingPost } = services.shujubiaozhunguanli;
 interface FormProps {
   modalVisible: boolean;
   onCancel: () => void;
@@ -16,7 +16,7 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 const CataForm: React.FC<FormProps> = (props) => {
-  const { modalVisible, onCancel, onSuccess, record, isEdit, agencyOptions,enumRange } = props;
+  const { modalVisible, onCancel, onSuccess, record, isEdit, agencyOptions, enumRange } = props;
   const [form] = Form.useForm();
   const [dataType, setDataType] = useState<string>('String'); // 默认数据类型
   // 校验标准合法性
@@ -107,74 +107,77 @@ const CataForm: React.FC<FormProps> = (props) => {
   };
 
   const handleFinish = async (values: any) => {
-  try {
-    // 将 isEmpty 转换为数字类型
-    values.isEmpty = values.isEmpty ? 1 : 0;
+    try {
+      // 将 isEmpty 转换为数字类型
+      values.isEmpty = values.isEmpty ? 1 : 0;
 
-    // 根据数据类型清理字段值
-    let payload: any = {
-      chName: values.chName,
-      enName: values.enName,
-      description: values.description || '',
-      agency: values.agency,
-      type: values.type,
-      isEmpty: values.isEmpty,
-      status: values.status || 0,
-      dftValue: values.dftValue || '',
-      valueRange: values.valueRange || '',
-    };
+      // 根据数据类型清理字段值
+      let payload: any = {
+        chName: values.chName,
+        enName: values.enName,
+        description: values.description || '',
+        agency: values.agency,
+        type: values.type,
+        isEmpty: values.isEmpty,
+        status: values.status || 0,
+        dftValue: values.dftValue || '',
+        valueRange: values.valueRange || '',
+      };
 
-    // 定义每种数据类型允许的字段
-    const typeConfig = {
-      String: ['length'],
-      Int: ['minVal', 'maxVal'],
-      Float: ['precision', 'minVal', 'maxVal','accuracy'],
-      Enum: ['codeNum'],
-    };
+      // 定义每种数据类型允许的字段
+      const typeConfig = {
+        String: ['length'],
+        Int: ['minVal', 'maxVal'],
+        Float: ['precision', 'minVal', 'maxVal', 'accuracy'],
+        Enum: ['codeNum'],
+      };
 
-    // 根据数据类型保留允许的字段
-    const allowedFields = typeConfig[values.type] || [];
-    allowedFields.forEach(field => {
-      if (values[field] !== undefined) {
-        payload[field] = values[field];
-      }
-    });
-
-    // 移除空值字段
-    const cleanedPayload = Object.fromEntries(
-      Object.entries(payload).filter(([_, value]) => value !== undefined)
-    );
-
-    let response;
-    if (isEdit) {
-      // 编辑模式
-      response = await updateDataStandardUsingPut({
-        ...cleanedPayload,
-        id: record?.id,
+      // 根据数据类型保留允许的字段
+      const allowedFields = typeConfig[values.type] || [];
+      allowedFields.forEach(field => {
+        if (values[field] !== undefined) {
+          payload[field] = values[field];
+        }
       });
-      console.log('response编辑', response);
-      console.log('record',cleanedPayload);
-      
-    } else {
-      // 新增模式
-      response = await addDataStandardUsingPost(cleanedPayload);
-      console.log('response新增', response);
-      
-      
-    }
 
-    if (response.code === 100200) {
-      message.success(isEdit ? '编辑成功' : '新增成功');
-      onCancel();
-      onSuccess();
-    } else {
-      message.error(response.msg || '操作失败');
+      // 移除空值字段
+      const cleanedPayload = Object.fromEntries(
+        Object.entries(payload).filter(([_, value]) => value !== undefined)
+      );
+
+      let response;
+      if (isEdit) {
+        // 编辑模式
+        response = await updateDataStandardUsingPut({
+          ...cleanedPayload,
+          id: record?.id,
+        });
+        console.log('response编辑', response);
+        console.log('record', cleanedPayload);
+
+      } else {
+        // 新增模式
+        console.log('新增数据', cleanedPayload);
+
+        response = await addDataStandardUsingPost(cleanedPayload);
+
+        console.log('response新增', response);
+
+
+      }
+
+      if (response.code === 100200) {
+        message.success(isEdit ? '编辑成功' : '新增成功');
+        onCancel();
+        onSuccess();
+      } else {
+        message.error(response.msg || '操作失败');
+      }
+    } catch (error) {
+      console.log('error', error);
+      message.error('提交失败，请重试');
     }
-  } catch (error) {
-    console.log('error', error);
-    message.error('提交失败，请重试');
-  }
-};
+  };
 
   // 使用 useEffect 监听 record 和 isEdit 的变化，设置初始值
   useEffect(() => {
@@ -259,7 +262,7 @@ const CataForm: React.FC<FormProps> = (props) => {
             rules={[{ required: true, message: '请选择枚举范围' }]}
           >
             <Select placeholder="请选择枚举范围">
-              {Object.entries(enumRange).map(([value, label]) =>(
+              {Object.entries(enumRange).map(([value, label]) => (
                 <Option key={value} value={value}>{label}</Option>
               ))}
             </Select>
@@ -272,7 +275,7 @@ const CataForm: React.FC<FormProps> = (props) => {
 
   return (
     <Modal
-      title={isEdit ? "编辑码表" : "新增码表"}
+      title={isEdit ? "编辑数据标准目录" : "新增数据标准目录"}
       open={modalVisible}
       onCancel={onCancel}
       footer={null}
@@ -309,7 +312,7 @@ const CataForm: React.FC<FormProps> = (props) => {
           name="isEmpty"
           label="是否允许为空"
         >
-          <Switch/>
+          <Switch />
         </Form.Item>
         <Form.Item
           name="agency"

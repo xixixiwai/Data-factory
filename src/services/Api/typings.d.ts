@@ -4,6 +4,11 @@ declare namespace dataFactory {
     interfaceIds: number[];
   };
 
+  type BatchUpdateStatusDTO = {
+    ids?: number[];
+    status?: number;
+  };
+
   type deleteUsingDELETEParams = {
     /** id */
     id: number;
@@ -157,7 +162,7 @@ declare namespace dataFactory {
 
   type Response = {
     /** 下级返回参数 */
-    childList?: Response[];
+    children?: Response[];
     /** 数据类型只能为(3-String、1-Int、2-Float、0-Object、4-Array) */
     dataType?: number;
     /** 参数描述 */

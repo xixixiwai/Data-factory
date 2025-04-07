@@ -32,6 +32,24 @@ export async function batchCategorizeUsingPost(
   });
 }
 
+/** 批量修改接口状态 批量修改接口状态 PUT /interface-directory/batchUpdateStatus */
+export async function batchUpdateStatusUsingPut(
+  body: dataFactory.BatchUpdateStatusDTO,
+  options?: { [key: string]: any },
+) {
+  return request<dataFactory.Robject>(
+    '/api/interface-directory/batchUpdateStatus',
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: body,
+      ...(options || {}),
+    },
+  );
+}
+
 /** 删除接口 删除接口 DELETE /interface-directory/delete */
 export async function deleteUsingDelete(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)

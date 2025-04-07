@@ -9,7 +9,7 @@ const { searchListAndChildUsingGet } = service.muluguanli;
 const { Content, Sider } = Layout;
 import { getDirectoryUsingGet } from '@/services/Directory/muluguanli';
 import services from '@/services/Api'
-const { addDirUsingPost, batchCategorizeUsingPost, deleteUsingDelete, queryByIdUsingGet, queryUsingPost, testUsingPost, updateUsingPut } = services.jiekoumulu
+const { batchUpdateStatusUsingPut, addDirUsingPost, batchCategorizeUsingPost, deleteUsingDelete, queryByIdUsingGet, queryUsingPost, testUsingPost, updateUsingPut } = services.jiekoumulu
 // 在顶部添加TreeDataNode类型定义
 type DirectoryTreeDataNode = TreeDataNode & {
   id: number;
@@ -59,6 +59,8 @@ export default function ApiManagement() {
   const [testData, setTestData] = useState<any[]>([]);//接口测试数据
   const [selectedRows, setSelectedRows] = useState<DetailData[]>(); // 用于存储选中的行数据（批量操作）
   const [batchActionType, setBatchActionType] = useState<'publish' | 'disable'>(); // 用于存储批量操作类型
+  const [currentRecord, setCurrentRecord] = useState<DetailData | null>(null);//用于存储当前行数据
+  const [isEdit, setIsEdit] = useState(false);//用于判断是否是编辑状态
   // 在组件状态中添加：
   const [testParams, setTestParams] = useState<Record<string, any>>({});
   const [testResult, setTestResult] = useState<string>('');
@@ -162,10 +164,15 @@ export default function ApiManagement() {
       dataIndex: 'status',
       key: 'status',
       valueEnum: {
-        0: { text: '待发布', status: '0' },
-        1: { text: '已发布', status: '1' },
-        2: { text: '已停用', status: '2' },
+        0: { text: '未发布', status: '0' },
+        1: { text: '发布', status: '1' },
+        2: { text: '停用', status: '2' },
       },
+      render: (text: any, record: any) => (
+        <Tag color={record.status === '发布' ? 'green' : record.status === '停用' ? 'red' : 'orange'}>
+          {record.status}
+        </Tag>
+      ),
     },
     {
       title: '更新时间',
@@ -180,25 +187,25 @@ export default function ApiManagement() {
       render: (_: any, record: any) => [
         // <Button key={"edit"} type="link">编辑</Button>,
         // <Button key={"del"} type="link">删除</Button>,
-        (record.status === '已停用' || record.status === '未发布') && (
+        (record.status === '停用' || record.status === '未发布') && (
           <>
             <a
               key="publish"
               onClick={() => {
                 Modal.confirm({
                   title: '确认发布',
-                  content: '确定要发布该码表吗？',
+                  content: '确定要发布该接口吗？',
                   onOk: async () => {
                     try {
                       console.log('record', record.id);
 
-                      // const res = await updateStatusUsingPut({
-                      //   ids: record.id,
-                      //   status: 1,
-                      // })
-                      // console.log(res);
+                      const res = await batchUpdateStatusUsingPut({
+                        ids: [record.id],
+                        status: 1,
+                      })
+                      console.log(res);
 
-                      // actionRef.current?.reload();
+                      actionRef.current?.reload();
                       message.success('发布成功');
                     } catch (error) {
                       message.error('发布失败');
@@ -212,11 +219,11 @@ export default function ApiManagement() {
             <a
               key="edit"
               onClick={() => {
-                // setCurrentRecord(record); // 设置当前操作的记录
-                // console.log('record', record);
+                setCurrentRecord(record); // 设置当前操作的记录
+                console.log('record', record);
 
-                // setIsEdit(true); // 设置为编辑模式
-                // setCreateModalVisible(true);
+                setIsEdit(true); // 设置为编辑模式
+                handleModalVisible(true);
               }}
             >
               编辑
@@ -230,7 +237,7 @@ export default function ApiManagement() {
             onClick={() => {
               Modal.confirm({
                 title: '确认删除',
-                content: '确定要删除该码表吗？',
+                content: '确定要删除该接口吗？',
                 onOk: async () => {
                   try {
                     const res = await deleteUsingDelete({ id: record.id });
@@ -255,7 +262,7 @@ export default function ApiManagement() {
             删除
           </a>
         ),
-        (record.status === '已发布' || record.status === '已停用' || record.status === '未发布') && (
+        (record.status === '发布' || record.status === '停用' || record.status === '未发布') && (
           <a
             key="test"
             onClick={() => {
@@ -264,6 +271,35 @@ export default function ApiManagement() {
             }}
           >
             接口测试
+          </a>
+        ),
+        (record.status === '发布') && (
+          <a
+            key="publish"
+            onClick={() => {
+              Modal.confirm({
+                title: '确认停用',
+                content: '确定要停用该接口？',
+                onOk: async () => {
+                  try {
+                    console.log('record', record.id);
+
+                    const res = await batchUpdateStatusUsingPut({
+                      ids: [record.id],
+                      status: 2,
+                    })
+                    console.log(res);
+
+                    actionRef.current?.reload();
+                    message.success('停用成功');
+                  } catch (error) {
+                    message.error('停用失败');
+                  }
+                },
+              });
+            }}
+          >
+            停用
           </a>
         )
       ],
@@ -413,6 +449,7 @@ export default function ApiManagement() {
         </Sider>
         <Content>
           <ProTable
+            actionRef={actionRef}
             rowKey="id"
             columns={columns}
             pagination={{
@@ -437,7 +474,7 @@ export default function ApiManagement() {
                       content: `确定要发布选中的 ${selectedRows.length} 个数据标准目录吗？`,
                       onOk: async () => {
                         try {
-                          await updateDataStandardStatusUsingPut({
+                          await batchUpdateStatusUsingPut({
                             ids: selectedRows.map((row) => row.id),
                             status: 1,
                           }
@@ -467,20 +504,20 @@ export default function ApiManagement() {
                       title: '确认批量停用',
                       content: `确定要停用选中的 ${selectedRows.length} 个数据标准目录吗？`,
                       onOk: async () => {
-                        // try {
-                        //   await updateDataStandardStatusUsingPut({
-                        //     ids: selectedRows.map((row) => row.id),
-                        //     status: 2,
-                        //   }
-                        //   )
-                        message.success('批量停用成功');
-                        //   //清空已选择的
-                        //   setSelectedRows([]);
-                        actionRef.current?.reload();
-                        actionRef.current?.clearSelected?.(); // 清空已选择的行 
-                        // } catch (error) {
-                        //   message.error('批量停用失败');
-                        // }
+                        try {
+                          await batchUpdateStatusUsingPut({
+                            ids: selectedRows.map((row) => row.id),
+                            status: 2,
+                          }
+                          )
+                          message.success('批量停用成功');
+                          //清空已选择的
+                          setSelectedRows([]);
+                          actionRef.current?.reload();
+                          actionRef.current?.clearSelected?.(); // 清空已选择的行 
+                        } catch (error) {
+                          message.error('批量停用失败');
+                        }
                       },
                       onCancel() {
                         console.log('Cancel');
@@ -509,8 +546,21 @@ export default function ApiManagement() {
 
       {/* 创建表单的 Modal */}
       <CreateForm
+        isEdit={isEdit}
+        record={currentRecord}
         treeData={treeData}
-        onCancel={() => handleModalVisible(false)}
+        onCancel={() => {
+          handleModalVisible(false)
+          setIsEdit(false)
+          setCurrentRecord(null)
+          actionRef.current?.reload()
+        }}
+        onSuccess={() => {
+          handleModalVisible(false)
+          setIsEdit(false)
+          setCurrentRecord(null)
+          actionRef.current?.reload()
+        }}
         modalVisible={createModalVisible}
       />
       {/* 详情框 */}
@@ -674,6 +724,7 @@ export default function ApiManagement() {
         }}
         footer={null}
         width={1200}
+
       >
         <Layout style={{ background: '#fff' }}>
           <Sider width={600} style={{ padding: 16, background: '#fff' }}>

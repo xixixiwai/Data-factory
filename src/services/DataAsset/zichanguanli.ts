@@ -17,6 +17,21 @@ export async function addDataAssetUsingPost(
   });
 }
 
+/** 新增字段 新增字段 POST /data-assets/addDataAssetField */
+export async function addDataAssetFieldUsingPost(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: dataFactory.addDataAssetFieldUsingPOSTParams,
+  options?: { [key: string]: any },
+) {
+  return request<dataFactory.Robject>('/api/data-assets/addDataAssetField', {
+    method: 'POST',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
 /** 删除资产 删除资产 DELETE /data-assets/deleteDataAsset */
 export async function deleteDataAssetUsingDelete(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -40,6 +55,21 @@ export async function deleteDataAssetFieldUsingDelete(
 ) {
   return request<dataFactory.Robject>('/api/data-assets/deleteDataAssetField', {
     method: 'DELETE',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
+/** 修改字段 修改字段 PUT /data-assets/editDataAssetField */
+export async function updateDataAssetFieldUsingPut(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: dataFactory.updateDataAssetFieldUsingPUTParams,
+  options?: { [key: string]: any },
+) {
+  return request<dataFactory.Robject>('/api/data-assets/editDataAssetField', {
+    method: 'PUT',
     params: {
       ...params,
     },

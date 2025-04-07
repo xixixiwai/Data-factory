@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ProForm, ProFormText, ProFormSelect } from '@ant-design/pro-components';
 import { message, Modal, Button } from 'antd';
 import service from '@/services/Db';
-const {addDataBaseUsingPost,updateDataBaseUsingPut,testConnectionUsingPost}=service.shujukubiaoguanli
+const { addDataBaseUsingPost, updateDataBaseUsingPut, testConnectionUsingPost } = service.shujukubiaoguanli
 interface DbFormProps {
   modalVisible: boolean;
   onCancel: () => void;
@@ -14,20 +14,20 @@ interface DbFormProps {
 }
 
 
-const DbForm: React.FC<DbFormProps> = ({ record,isEdit,modalVisible, onCancel, onCreate,onSuccess, selectedDbType }) => {
+const DbForm: React.FC<DbFormProps> = ({ record, isEdit, modalVisible, onCancel, onCreate, onSuccess, selectedDbType }) => {
   const [form] = ProForm.useForm();
   useEffect(() => {
     // 当 selectedDbType 发生变化时，更新表单的值
     form.setFieldsValue({ type: selectedDbType });
   }, [selectedDbType, form]);
-  useEffect(()=>{
-    if(isEdit&&record){
+  useEffect(() => {
+    if (isEdit && record) {
       form.setFieldsValue(record);
-    }else{
+    } else {
       form.resetFields();
-      
+
     }
-  },[isEdit,record])
+  }, [isEdit, record])
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();// 获取表单数据
@@ -36,31 +36,31 @@ const DbForm: React.FC<DbFormProps> = ({ record,isEdit,modalVisible, onCancel, o
       form.resetFields();// 重置表单
       onCancel();// 关闭模态框
       let response;
-      if(isEdit){
+      if (isEdit) {
         //编辑
-        console.log('编辑',record);
-        
-        response=await updateDataBaseUsingPut({
+        console.log('编辑', record);
+
+        response = await updateDataBaseUsingPut({
           status: values.status === '待发布' ? 0 : values.status === '已发布' ? 1 : values.status === '已停用' ? 2 : null,
           ...values,
-          id:record.id,
+          id: record.id,
 
         })
-        console.log('res',response)
-        
-      }else{
+        console.log('res', response)
+
+      } else {
         //新增
-        response=await addDataBaseUsingPost(values)
-        console.log('res',response)
-        
+        response = await addDataBaseUsingPost(values)
+        console.log('res', response)
+
       }
       if (response.code === 100200) {
-            message.success(isEdit ? '编辑成功' : '新增成功');
-            onCancel();
-            onSuccess();
-          } else {
-            message.error(response.msg || '操作失败');
-          }
+        message.success(isEdit ? '编辑成功' : '新增成功');
+        onCancel();
+        onSuccess();
+      } else {
+        message.error(response.msg || '操作失败');
+      }
     } catch (error) {
       console.log('验证失败', error);
       message.error('表单验证失败，请检查输入');
@@ -70,17 +70,19 @@ const DbForm: React.FC<DbFormProps> = ({ record,isEdit,modalVisible, onCancel, o
   const handleTestConnection = async () => {// 测试连接
     const values = await form.validateFields();
     console.log('values', values);
-    
+
     try {
-      const res=await testConnectionUsingPost({
-        id:values.id,
-        password:values.password,
-        url:values.url,
-        username:values.username,
+      const res = await testConnectionUsingPost({
+        id: values.id,
+        password: values.password,
+        url: values.url,
+        username: values.username,
       })
+      console.log('联通测试res', res);
+
       if (res.code === 100200) {
         message.success('连通测试成功');
-      }else{
+      } else {
         message.error('连通测试失败');
       }
     } catch (error) {
@@ -136,13 +138,13 @@ const DbForm: React.FC<DbFormProps> = ({ record,isEdit,modalVisible, onCancel, o
           <Button type="primary" onClick={handleTestConnection} style={{ marginLeft: '10px' }}>
             连通测试
           </Button>
-          
+
           <Button type="primary" onClick={handleSubmit}>
             确定
           </Button>
           <Button onClick={onCancel}>
             取消
-          </Button>     
+          </Button>
         </div>
       </ProForm>
     </Modal>

@@ -1,8 +1,8 @@
 // 父组件
 import service from '@/services/Db';
-import React, { useState,useRef } from 'react';
-import { ProTable, ProFormText, ProFormSelect, ProForm,ActionType } from '@ant-design/pro-components';
-import { Button, Modal, message,Tag,Table } from 'antd';
+import React, { useState, useRef } from 'react';
+import { ProTable, ProFormText, ProFormSelect, ProForm, ActionType } from '@ant-design/pro-components';
+import { Button, Modal, message, Tag, Table } from 'antd';
 import { PlusOutlined, ImportOutlined } from '@ant-design/icons';
 
 import db1 from '@/assets/db1.jpg';
@@ -21,13 +21,13 @@ import db13 from '@/assets/db13.jpg';
 import db14 from '@/assets/db14.jpg';
 import db15 from '@/assets/db15.jpg';
 import DbForm from './components/DbForm';
-const {updateDataBaseUsingPut,updateDbStatusUsingPut,queryDbListUsingPost,testConnectionUsingPost,deleteDataBaseUsingDelete}=service.shujukubiaoguanli
- // 状态映射关系
-  const statusMap = {
-    '待发布': 0,
-    '已发布': 1,
-    '已停用': 2,
-  };
+const { updateDataBaseUsingPut, updateDbStatusUsingPut, queryDbListUsingPost, testConnectionUsingPost, deleteDataBaseUsingDelete } = service.shujukubiaoguanli
+// 状态映射关系
+const statusMap = {
+  '待发布': 0,
+  '已发布': 1,
+  '已停用': 2,
+};
 
 
 // 新增数据源表单
@@ -80,7 +80,7 @@ const DbType = ({ visible, onCancel, onCreate }: any) => {
           </span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', cursor: 'pointer' }}
-        onClick={() => onCreate('SQL Server')}>
+          onClick={() => onCreate('SQL Server')}>
           <img
             style={{
               width: '100px',
@@ -289,14 +289,14 @@ export default function DataSourceManagement() {
   const [codeTableDetail, setCodeTableDetail] = useState<[]>([]); //用于存储码表详情数据
   const [isEdit, setIsEdit] = useState(false); // 是否是编辑模式
   const [currentRecord, setCurrentRecord] = useState<null>(null); // 当前操作的记录
-  
+
   // 定义表格列
-const columns = [
-  {
-    title: '数据源名称',
-    dataIndex: 'name',
-    key: 'name',
-    render: (text:any, record:any) => (
+  const columns = [
+    {
+      title: '数据源名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: any, record: any) => (
         <span
           style={{ cursor: 'pointer', color: 'blue' }}
           onClick={() => {
@@ -308,166 +308,167 @@ const columns = [
           {text}
         </span>
       ),
-  },
-  {
-    title: '数据源类型',
-    dataIndex: 'type',
-    key: 'type',
-    search: false,
-  },
-  {
-    title: '数据源描述',
-    dataIndex: 'description',
-    key: 'description',
-    search: false,
-  },
-  {
-    title: '连接信息',
-    dataIndex: 'url',
-    key: 'url',
-    search: false,
-  },
-  {
-    title: '应用状态',
-    dataIndex: 'status',
-    key: 'status',
-    type: 'select',
-    initialValue: '待发布',
-    valueEnum: {
-      待发布: { text: '待发布' },
-      已发布: { text: '已发布' },
-      已停用: { text: '已停用' },
     },
-    search: {//搜索框
-        transform: (value:any) => ({ status: statusMap[value]}),
+    {
+      title: '数据源类型',
+      dataIndex: 'type',
+      key: 'type',
+      search: false,
     },
-    render: (_:any, record:any) => (
+    {
+      title: '数据源描述',
+      dataIndex: 'description',
+      key: 'description',
+      search: false,
+    },
+    {
+      title: '连接信息',
+      dataIndex: 'url',
+      key: 'url',
+      search: false,
+    },
+    {
+      title: '应用状态',
+      dataIndex: 'status',
+      key: 'status',
+      type: 'select',
+      initialValue: '待发布',
+      valueEnum: {
+        待发布: { text: '待发布' },
+        已发布: { text: '已发布' },
+        已停用: { text: '已停用' },
+      },
+      search: {//搜索框
+        transform: (value: any) => ({ status: statusMap[value] }),
+      },
+      render: (_: any, record: any) => (
         <Tag color={record.status === '已发布' ? 'green' : record.status === '已停用' ? 'red' : 'orange'}>
           {record.status}
         </Tag>
       ),
-  },
-  {
-    title: '更新时间',
-    dataIndex: 'updateTime',
-    key: 'updateTime',
-    search: false,
-  },
-  {
-    title: '操作',
-    width: 300,
-    valueType: 'option',
-    dataIndex: 'option',
-    render: (text: any, record: any) => [
-      (record.status === "待发布" || record.status === "已发布" || record.status === "已停用") && (
-        <a key="test" onClick={() => {
-          Modal.confirm({
-            title: '确认联通测试',
-            content: '是否确认联通测试',
-            onOk: async() => {
-              const res = await testConnectionUsingPost({
-                id: record.id,
-                password: record.password,
-                url: record.url,
-                username: record.username,
-              });
-              
-              if (res.code === 100200) {
-                message.success('联通测试成功');
-              }else{
-                message.error('联通测试失败');
-              }
-              actionRef.current?.reload();//刷新表格
-              console.log('res', res);
-              
-            }
-          });
-        }}>联通测试</a>
-      ),
-      (record.status === "待发布" || record.status === "已停用") && (
-        <a key="publish" onClick={() => {
-          Modal.confirm({
-            title: '确认发布',
-            content: '是否确认发布',
-            onOk: async() => {
-              const res=await updateDbStatusUsingPut({
-                ids: [record.id],
-                status: 1,
-              })
-              actionRef.current?.reload();//刷新表格
-              console.log('res', res);
-              
-              record.status = "已发布";
-            }
-          });
-        }}>发布</a>
-      ),
-      (record.status === "待发布" || record.status === "已停用") && (
-        <a key="edit" onClick={()=>{
-          setIsEdit(true);
-          setModalVisible(true);
-          setCurrentRecord(record);
-          console.log('currentRecord', currentRecord);
-          
-        }}
-        
-        >编辑</a>
-      ),
-      (record.status === "待发布") && (
-        <a key="delete"
-          onClick={() => {
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updateTime',
+      key: 'updateTime',
+      search: false,
+    },
+    {
+      title: '操作',
+      width: 300,
+      valueType: 'option',
+      dataIndex: 'option',
+      render: (text: any, record: any) => [
+        (record.status === "待发布" || record.status === "已发布" || record.status === "已停用") && (
+          <a key="test" onClick={() => {
             Modal.confirm({
-              title: '确认删除',
-              content: '是否确认删除',
-              onOk: () => {
+              title: '确认联通测试',
+              content: '是否确认联通测试',
+              onOk: async () => {
+                const res = await testConnectionUsingPost({
+                  id: record.id,
+                  password: record.password,
+                  url: record.url,
+                  username: record.username,
+                });
+                console.log('res', res);
 
-                try{
-                  deleteDataBaseUsingDelete({ id: record.id });
-                  message.success('删除成功');
-                }catch(e){
-                  message.error('删除失败');
-                  console.log(e);
+                if (res.code === 100200) {
+                  message.success('联通测试成功');
+                } else {
+                  message.error('联通测试失败');
                 }
                 actionRef.current?.reload();//刷新表格
+                console.log('res', res);
+
               }
-              
             });
-          }}
-        >
-          删除
-        </a>
-      ),
-      (record.status === "已发布") && (
-        <a key="disable"
-          onClick={() => {
+          }}>联通测试</a>
+        ),
+        (record.status === "待发布" || record.status === "已停用") && (
+          <a key="publish" onClick={() => {
             Modal.confirm({
-              title: '确认停用',
-              content: '是否确认停用',
-              onOk: async() => {
-              const res=await updateDbStatusUsingPut({
-                ids: [record.id],
-                status: 2,
-              })
-              
-              console.log('res', res);
-              
-              record.status = "已停用";
-              actionRef.current?.reload();//刷新表格
-              
-            }
+              title: '确认发布',
+              content: '是否确认发布',
+              onOk: async () => {
+                const res = await updateDbStatusUsingPut({
+                  ids: [record.id],
+                  status: 1,
+                })
+                actionRef.current?.reload();//刷新表格
+                console.log('res', res);
+
+                record.status = "已发布";
+              }
             });
+          }}>发布</a>
+        ),
+        (record.status === "待发布" || record.status === "已停用") && (
+          <a key="edit" onClick={() => {
+            setIsEdit(true);
+            setModalVisible(true);
+            setCurrentRecord(record);
+            console.log('currentRecord', currentRecord);
+
           }}
-        >
-          停用
-        </a>
-      )
-    ]
-  },
-];
+
+          >编辑</a>
+        ),
+        (record.status === "待发布") && (
+          <a key="delete"
+            onClick={() => {
+              Modal.confirm({
+                title: '确认删除',
+                content: '是否确认删除',
+                onOk: () => {
+
+                  try {
+                    deleteDataBaseUsingDelete({ id: record.id });
+                    message.success('删除成功');
+                  } catch (e) {
+                    message.error('删除失败');
+                    console.log(e);
+                  }
+                  actionRef.current?.reload();//刷新表格
+                }
+
+              });
+            }}
+          >
+            删除
+          </a>
+        ),
+        (record.status === "已发布") && (
+          <a key="disable"
+            onClick={() => {
+              Modal.confirm({
+                title: '确认停用',
+                content: '是否确认停用',
+                onOk: async () => {
+                  const res = await updateDbStatusUsingPut({
+                    ids: [record.id],
+                    status: 2,
+                  })
+
+                  console.log('res', res);
+
+                  record.status = "已停用";
+                  actionRef.current?.reload();//刷新表格
+
+                }
+              });
+            }}
+          >
+            停用
+          </a>
+        )
+      ]
+    },
+  ];
 
   // 处理新增数据源
   const handleCreate = (values: any) => {
-    
+
     setModalVisible(false); // 关闭模态框
   };
 
@@ -514,7 +515,7 @@ const columns = [
 
             const response = await queryDbListUsingPost(body);
             console.log('response', response);
-            
+
             return {
               data: response.data.records,
               total: response.data.total,
@@ -536,15 +537,15 @@ const columns = [
         onCreate={openDbForm}
       />
       <DbForm
-        
+
         modalVisible={modalVisible}
-        onCancel={() =>{
-           setModalVisible(false)// 关闭模态框
-           setIsEdit(false);
-           setCurrentRecord(null);
-           actionRef.current?.reload();//刷新表格
+        onCancel={() => {
+          setModalVisible(false)// 关闭模态框
+          setIsEdit(false);
+          setCurrentRecord(null);
+          actionRef.current?.reload();//刷新表格
         }}
-        onSuccess={()=>{
+        onSuccess={() => {
           setModalVisible(false)// 关闭模态框
           setIsEdit(false);
           setCurrentRecord(null);
@@ -555,7 +556,7 @@ const columns = [
         selectedDbType={selectedDbType}
         record={currentRecord}
       />
-       <Modal
+      <Modal
         title="码表详情"
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}

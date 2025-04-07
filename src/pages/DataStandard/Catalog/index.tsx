@@ -477,11 +477,17 @@ export default function CatalogManagement() {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const res = await updateDataStandardStatusUsingPut({}, file);
-                message.success('导入成功');
-                console.log('res', res);
+                const res = await importExcelUsingPost({}, file);
 
-                actionRef.current?.reload();// 刷新表格
+                console.log('导入res', res);
+
+                if (res.code === 100200) {
+                  message.success('导入成功');
+                  actionRef.current?.reload();
+                } else {
+                  message.error('导入失败');
+                  actionRef.current?.reload();
+                }
                 return false; // 阻止默认上传行为
               } catch (error) {
                 message.error('导入失败'); actionRef.current?.reload();

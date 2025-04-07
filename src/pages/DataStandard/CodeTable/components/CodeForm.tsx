@@ -1,8 +1,8 @@
-import React, { PropsWithChildren, useState, useEffect } from 'react';
-import { Descriptions, message, Modal } from 'antd';
+import React, { PropsWithChildren, useState, useEffect, useRef } from 'react';
+import { Button, Descriptions, message, Modal, Popconfirm } from 'antd';
 import { Divider } from 'antd';
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProForm, ProFormText, ProFormTextArea, EditableProTable, ProFormSelect } from '@ant-design/pro-components';
+import { ProForm, ProFormText, ProFormTextArea, EditableProTable, ProFormSelect, ActionType } from '@ant-design/pro-components';
 import services from '@/services/CodeTable';
 const { addCodeTableUsingPost, updateCodeTableUsingPut, deleteCodeMsgUsingDelete } = services.mabiaoguanli;
 
@@ -34,7 +34,7 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
   const [dataSource, setDataSource] = useState<Record<string, any>[]>([]);// 用于存储码值列表
   const [form] = ProForm.useForm(); // 使用 ProForm 的 useForm 方法
   const [formKey, setFormKey] = useState(0); // 用于强制重新渲染表单
-
+  const actionRef = useRef<ActionType>(); // 用于刷新表格数据
   // 验证表格数据
   const validateTableData = (dataSource: Record<string, any>[]) => {
     for (const record of dataSource) {
@@ -83,16 +83,32 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
         </a>,
         <a
           key="delete"
-          onClick={() => {
-            console.log('record.id', record.id);
-            console.log('dataSource', dataSource);
-            setDataSource(dataSource.filter((item) => item.id !== record.id));//删除行
-            message.info('删除成功');
+          onClick={async () => {
+            const res = await deleteCodeMsgUsingDelete({ id: record.id });
+            if (res.code === 100200) {
+              setDataSource(dataSource.filter((item) => item.id !== record.id));//删除行
+              actionRef.current?.reload();//刷新表格
+              message.info('删除成功');
+            }
+
 
           }}
         >
           删除
         </a>,
+        // <Popconfirm
+        //   key="delete"
+        //   title="确定删除吗？"
+        //   onConfirm={() => {
+        //     console.log('record.id', dataSource[0].id, record.id, dataSource[0].id !== record.id);
+        //     setDataSource(dataSource.filter((item) => item.id !== record.id));
+        //   }}
+        // >
+
+        //   <Button type="primary" style={{ marginLeft: 8 }}>
+        //     删除
+        //   </Button>
+        // </Popconfirm>,
       ],
     },
   ] as ProColumns<Record<string, any>, "text">[];
@@ -186,8 +202,9 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
           ...item,
           id: item.id || `temp_${Math.random().toString(36).substr(2, 9)}`
         })) || []
-      });
 
+      });
+      // setDataSource(record.codeMsgPList)
       // 调试日志
       console.log('初始化状态值:', {
         source: record.status,
@@ -223,7 +240,6 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
       }}
     >
       <ProForm
-
         form={form} // 绑定 form
         key={formKey} // 强制重新渲染表单
         onFinish={handleFormFinish}
@@ -266,27 +282,44 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
         />
         <Divider />
         <EditableProTable
+          actionRef={actionRef}
           headerTitle="编码配置"
           name="codeMsgPList" // 保持与后端字段一致          headerTitle="编码配置"
           rowKey="id"
           columns={columns}
           value={dataSource} // 绑定到 dataSource
+          // editable={{
+          //   type: 'multiple',
+          //   onSave: async (key, row) => {
+          //     console.log('保存', key, row);
+          //   },
+          //   onDelete: async (key, row) => {
+          //     try {
+          //       const res = await deleteCodeMsgUsingDelete({ id: row.id });
+          //       console.log('res', res, 'key', key, 'row', row);
+          //       setDataSource(dataSource.filter(item => item.id !== row.id));
+          //     } catch (error) {
+          //       console.error('删除失败', error);
+          //     }
+          //   },
+          //   onCancel: async (key, row) => {
+          //     console.log('取消', key, row);
+          //   }
+          // }}
           editable={{
             type: 'multiple',
-            onSave: async (key, row) => {
-              console.log('保存', key, row);
-            },
-            onDelete: async (key, row) => {
-              try {
-                const res = await deleteCodeMsgUsingDelete({ id: row.id });
-                console.log('res', res, 'key', key, 'row', row);
-                setDataSource(dataSource.filter(item => item.id !== row.id));
-              } catch (error) {
-                console.error('删除失败', error);
-              }
-            },
-            onCancel: async (key, row) => {
-              console.log('取消', key, row);
+            actionRender: (row, config, defaultDoms) => {
+              return [
+                <>
+                  <Button type="primary">
+                    {defaultDoms.save}
+                  </Button>
+                  <Button type="primary">
+                    {defaultDoms.cancel}
+                  </Button>
+
+                </>
+              ]
             }
           }}
           onChange={(value) => {

@@ -8,7 +8,7 @@ import DataAssetForm from './components/DataAssetForm';
 const { Content, Sider } = Layout;
 const { addUsingPost, deleteUsingDelete, editUsingPut, getTreeUsingGet, hasChildUsingGet, searchByNameUsingGet, getDirectoryUsingGet, getResourcesByIdsUsingGet } = service.muluguanli;
 import service1 from '@/services/DataAsset'
-const { addDataAssetUsingPost, deleteDataAssetUsingDelete, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut } = service1.zichanguanli
+const { addDataAssetFieldUsingPost, addDataAssetUsingPost, deleteDataAssetUsingDelete, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut } = service1.zichanguanli
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -22,6 +22,7 @@ type DirectoryTreeDataNode = TreeDataNode & {
 interface CreateFormState {
   chName: string; //中文名称
   daFieldList: Array<{
+    assetId: number; //数据资产id
     chName: string; //字段中文名称
     codeTbld: string; //数据资产字段数据表准映射
     description: string; //字段说明

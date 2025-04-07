@@ -1,8 +1,8 @@
-import React, { PropsWithChildren, useEffect, useState } from 'react';
-import { Modal, Form, Input, Button, TreeSelect, message, Select } from 'antd';
-import { ProForm, EditableProTable, ProColumns } from '@ant-design/pro-components';
+import React, { PropsWithChildren, useEffect, useState, useRef } from 'react';
+import { Modal, Form, Input, Button, TreeSelect, message, Select, } from 'antd';
+import { ProForm, EditableProTable, ProColumns, ActionType } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
-import { addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut, updateDataAssetUsingPut } from '@/services/DataAsset/zichanguanli';
+import { addDataAssetFieldUsingPost, deleteDataAssetFieldUsingDelete, addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut, updateDataAssetUsingPut } from '@/services/DataAsset/zichanguanli';
 import services from '@/services/Directory';
 const { getTreeUsingGet, getDirectoryUsingGet, getResourcesByIdsUsingGet } = services.muluguanli;
 import services1 from '@/services/Catalog'
@@ -21,6 +21,8 @@ interface DirectoryItem {
 }
 
 type FieldItem = {
+  assetsId: number;
+  id: number;
   chName: string; // 字段中文名称
   dataStandardId: string; // 数据资产字段数据表准映射
   description: string; // 字段说明
@@ -29,6 +31,7 @@ type FieldItem = {
 
 const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible, onCancel, isEdit, record }) => {
   const [form] = Form.useForm();
+  const actionRef = useRef<ActionType>(); // 用于刷新表格数据
   const [treeData, setTreeData] = useState<any[]>([]); // 目录树数据
   const [directoryData, setDirectoryData] = useState<DirectoryItem[]>([]); // 所属目录数据
   const [standardMappingOptions, setStandardMappingOptions] = useState<any[]>([]); // 标准映射选项
@@ -83,6 +86,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
   const handleSubmit = async () => {
     try {
       // 获取表单值
+
       const chName = form.getFieldValue('chName');
       const enName = form.getFieldValue('enName');
       const description = form.getFieldValue('description');
@@ -92,6 +96,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       console.log('提交directoryIds', directoryIds);
       console.log('dataSource', dataSource);
       const daFieldList = dataSource.map((field) => ({
+
         chName: field.chName,
         enName: field.enName,
         description: field.description,
@@ -100,6 +105,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       }));
 
       const updateDaFieldLists = dataSource.map((field) => ({
+        assetsId: dataSource[0].assetsId,
         chName: field.chName,
         enName: field.enName,
         description: field.description,
@@ -116,6 +122,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
         daFieldList,
       };
       const params2 = {
+        id: record.id,
         chName,
         enName,
         description,
@@ -129,13 +136,13 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
         console.log('编辑', record, params2,);
 
         const response = await updateDataAssetUsingPut({
-          id: record.id,
-          //  ...params2 
-          chName: params2.chName,
-          enName: params2.enName,
-          description: params2.description,
-          directoryIds: params2.directoryIds,
-          updateDaFieldLists: params2.updateDaFieldLists
+          // id: record.id,
+          ...params2
+          // chName: params2.chName,
+          // enName: params2.enName,
+          // description: params2.description,
+          // directoryIds: params2.directoryIds,
+          // updateDaFieldLists: params2.updateDaFieldLists
 
         });
 
@@ -286,11 +293,26 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       title: '操作',
       valueType: 'option',
       render: (text, record, _, action) => [
-        <a key="delete" onClick={() => {
-          console.log('删除', dataSource.map(item => item.id) !== record.id);
+        <a key="delete" onClick={async () => {
+          // console.log('删除', dataSource.map(item => item.id) !== record.id);
 
-          setDataSource(prev => prev.filter(item => item.id !== record.id));
-          // action?.deleteRecord?.(record.id);
+          // setDataSource(prev => prev.filter(item => item.id !== record.id));
+          // // action?.deleteRecord?.(record.id);
+          console.log('record删除', record.id);
+
+          const res = await deleteDataAssetFieldUsingDelete({
+            id: record.id,
+          })
+          console.log('res', res);
+
+          if (res.code === 100200) {
+            // 删除成功后，从dataSource中移除对应的项
+            setDataSource(prev => prev.filter(item => item.id !== record.id));
+            actionRef.current?.reload(); // 刷新表格
+            message.success('删除成功');
+          } else {
+            message.error('删除失败');
+          }
         }}>
           删除
         </a>,
@@ -448,7 +470,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
           rowKey="id"
           columns={daFieldListColumns}
           value={dataSource}
-          onChange={(value) => setDataSource([...value])}
+          onChange={(value) => setDataSource(value)}
+          actionRef={actionRef}
           recordCreatorProps={{
             position: 'bottom',
             record: () => ({
@@ -462,11 +485,19 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
             icon: <PlusOutlined />,
           }}
           editable={{
-            onSave: (key, row) => {
-              setDataSource(prev => prev.map(item => item.id === key ? row : item));
+            onSave: async (key, row) => {
+              console.log('保存', row, record.dataFieldList[0].assetsId);
+
+              await addDataAssetFieldUsingPost({
+                assetsId: record.dataFieldList[0].assetsId,
+                ...row,
+              }).then(() => {
+                actionRef.current?.reload(); // 刷新表格
+              })
             },
             onDelete: (key) => {
-              setDataSource(prev => prev.filter(item => item.id !== key));
+              setDataSource(prev => prev.filter(item => item.id === key));
+              actionRef.current?.reload(); // 刷新表格
             },
 
           }}

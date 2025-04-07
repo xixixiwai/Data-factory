@@ -16,9 +16,12 @@
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.4.4",
+    "@types/echarts": "^5.0.0",
     "@umijs/max": "^4.4.6",
     "@umijs/plugin-layout": "^0.18.4",
     "antd": "^5.4.0",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "file-saver": "^2.0.5",
     "swagger-ui-dist": "^5.20.1"
   },

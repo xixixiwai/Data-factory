@@ -1,4 +1,4 @@
-import { Button, Modal, Form, Popconfirm } from 'antd';
+import { Button, Modal, Form, Popconfirm, Descriptions } from 'antd';
 import React, { PropsWithChildren, useEffect, useState, useRef } from 'react';
 import type { ProFormInstance } from '@ant-design/pro-components';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { log } from 'echarts/types/src/util/log.js';
 
 // 数据来源
 const dataSource1 = [
@@ -36,6 +37,8 @@ interface CreateFormProps {
   modalVisible: boolean;
   onCancel: () => void;
   treeData: any;
+  isEdit: boolean;
+  record?: any;
 }
 
 //新增数据
@@ -68,67 +71,70 @@ interface CreateFormState {
   type: number;
 }
 
+
 const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
-  const { modalVisible, onCancel, treeData } = props;
+  const { modalVisible, onCancel, treeData, isEdit, record } = props;
   const actionRef1 = useRef<ActionType>(null);
   const actionRef2 = useRef<ActionType>(null);
   const actionRef3 = useRef<ActionType>(null);
-  const [tableData, setTableData] = useState<any[]>([
-    {
-      id: Date.now(),
-      name: 'id',
-      type: 'Float',
-      required: true,
-      description: '参数描述',
-    },
+  const [form] = Form.useForm();
+  const [tableData, setTableData] = useState<Record<string, any>[]>([
+    // {
+    //   id: Date.now(),
+    //   name: 'id',
+    //   type: 'Float',
+    //   required: true,
+    //   description: '参数描述',
+    // },
   ]);
-  const [requestBodyData, setRequestBodyData] = useState<any[]>([
-    {
-      id: Date.now(),
-      name: 'data1',
-      type: 'Object',
-      required: true,
-      description: '请求Body参数',
-      children: [
-        {
-          id: Date.now() + 1,
-          name: 'name',
-          type: 'String',
-          required: true,
-          description: '名称',
-        },
-        {
-          id: Date.now() + 2,
-          name: 'sex',
-          type: 'Int',
-          required: false,
-          description: '性别',
-        },
-      ],
-    },
+  const [requestBodyData, setRequestBodyData] = useState<Record<string, any>[]>([
+    // {
+    //   id: Date.now(),
+    //   name: 'data1',
+    //   type: 'Object',
+    //   required: true,
+    //   description: '请求Body参数',
+    //   children: [
+    //     {
+    //       id: Date.now() + 1,
+    //       name: 'name',
+    //       type: 'String',
+    //       required: true,
+    //       description: '名称',
+    //     },
+    //     {
+    //       id: Date.now() + 2,
+    //       name: 'sex',
+    //       type: 'Int',
+    //       required: false,
+    //       description: '性别',
+    //     },
+    //   ],
+    // },
   ]);
-  const [responseData, setResponseData] = useState<any[]>([
-    {
-      id: Date.now(),
-      name: 'data1',
-      type: 'Object',
-      description: '返回参数',
-      children: [
-        {
-          id: Date.now() + 1,
-          name: 'name',
-          type: 'String',
-          description: '名称',
-        },
-        {
-          id: Date.now() + 2,
-          name: 'sex',
-          type: 'Int',
-          description: '性别',
-        },
-      ],
-    },
+  const [responseData, setResponseData] = useState<Record<string, any>[]>([
+    // {
+    //   id: Date.now(),
+    //   name: 'data1',
+    //   type: 'Object',
+    //   description: '返回参数',
+    //   children: [
+    //     {
+    //       id: Date.now() + 1,
+    //       name: 'name',
+    //       type: 'String',
+    //       description: '名称',
+    //     },
+    //     {
+    //       id: Date.now() + 2,
+    //       name: 'sex',
+    //       type: 'Int',
+    //       description: '性别',
+    //     },
+    //   ],
+    // },
   ]);
+
   // 定义通用表格列
   const commonColumns1 = [
     {
@@ -141,7 +147,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '参数位置',
-      dataIndex: 'location',
+      dataIndex: 'position',
       width: 130,
       valueType: 'select',
       valueEnum: {
@@ -156,7 +162,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '数据类型',
-      dataIndex: 'type',
+      dataIndex: 'dataType',
       width: 130,
       valueType: 'select',
       valueEnum: {
@@ -172,7 +178,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '是否必填',
-      dataIndex: 'required',
+      dataIndex: 'isRequired',
       width: 100,
       valueType: 'select',
       valueEnum: {
@@ -185,7 +191,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '默认值',
-      dataIndex: 'defaultValue',
+      dataIndex: 'dftValue',
       width: 110,
     },
     {
@@ -202,9 +208,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
           key="editable"
           type="primary"
           onClick={() => {
-
             console.log('record0', record);
-
             action?.startEditable?.(record.id);
           }}
         >
@@ -214,6 +218,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
           key="delete"
           title="确定删除吗？"
           onConfirm={() => {
+            console.log('record.id', tableData, record.id, tableData[0].id !== record.id);
+
             setTableData(tableData.filter((item) => item.id !== record.id));
           }}
         >
@@ -239,7 +245,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
 
     {
       title: '数据类型',
-      dataIndex: 'type',
+      dataIndex: 'dataType',
       width: 130,
       valueType: 'select',
       valueEnum: {
@@ -255,7 +261,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '是否必填',
-      dataIndex: 'required',
+      dataIndex: 'isRequired',
       width: 100,
       valueType: 'select',
       valueEnum: {
@@ -268,7 +274,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '默认值',
-      dataIndex: 'defaultValue',
+      dataIndex: 'dftValue',
       width: 110,
     },
     {
@@ -402,7 +408,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
 
     {
       title: '数据类型',
-      dataIndex: 'type',
+      dataIndex: 'dataType',
       width: 130,
       valueType: 'select',
       valueEnum: {
@@ -512,6 +518,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
   }) => {
     // 计算默认展开的行
     const getExpandedRowKeys = (data: any) => {
+      if (!data) return [];
       const expandedKeys: any = [];
       const traverse = (items: any) => {
         items.forEach((item: any) => {
@@ -557,7 +564,11 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
           rowKey="id"
           columns={columns}
           value={data}
-          onChange={onDataChange}
+          onChange={(value) => {
+            console.log('valuechange', value);
+
+            onDataChange([...value])
+          }}
           bordered
           size="middle"
           recordCreatorProps={false}
@@ -607,18 +618,53 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
       ...(node.children?.length ? convertTreeToOptions(node.children) : []),
     ]);
   };
+  useEffect(() => {
+    if (isEdit && record) {
+      //编辑
+      console.log('current', record);
+      console.log('编辑');
 
+      const current = form.setFieldsValue({
+        name: record.name,
+        desc: record.description,
+        source: record.source,
+        type: record.type,
+        ip: record.ip,
+        path: record.path,
+        method: record.method,
+        agreement: record.agreement,
+        timeout: record.timeout,
+      });
+      setTableData(record.requestParamList);
+      setResponseData(record.responseList);
+      setRequestBodyData(record.requestBodyList);
+      console.log('当前值', tableData);
+
+    } else {
+      //新增
+      console.log('新增');
+    }
+  }, [isEdit, record]);
   // 转换 treeData 为 ProFormSelect 需要的格式
   const options = convertTreeToOptions(treeData);
   return (
     <Modal open={modalVisible} footer={null} onCancel={onCancel} width={1200}>
-      <ProCard>
+
+      <ProForm
+        layout='horizontal'  // 设置为水平布局
+        labelCol={{ span: 7 }}  // 设置标签宽度
+        wrapperCol={{ span: 18 }}  // 设置输入框宽度
+        submitter={false}
+        form={form}
+
+      >
         <StepsForm
           onFinish={async () => {
             // await waitTime(1000);
             message.success('提交成功');
           }}
           formProps={{
+            form: form,// 添加form属性
             layout: 'horizontal',
             labelCol: { span: 6 },
             wrapperCol: { span: 18 },
@@ -703,7 +749,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
             />
             <ProFormText
               label="IP端口"
-              name="ipport"
+              name="ip"
               width="md"
               placeholder="请输入IP端口"
               rules={[{ required: true }]}
@@ -748,6 +794,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
               onDataChange={setTableData}
               title="输入参数配置"
               actionRef={actionRef1}
+
             />
 
             <EnhancedEditableTable
@@ -769,7 +816,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
             />
           </StepsForm.StepForm>
         </StepsForm>
-      </ProCard>
+      </ProForm>
+
     </Modal>
   );
 };
