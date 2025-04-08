@@ -9,7 +9,7 @@ interface InterfaceData {
 }
 
 const DataVisualization: React.FC = () => {
-    const [interfaceData, setInterfaceData] = useState<InterfaceData[]>([]);
+    const [interfaceData, setInterfaceData] = useState<InterfaceData[]>([]);// 接口数据
     const [loading, setLoading] = useState<boolean>(true);
 
     // 模拟从接口模块获取数据

@@ -1,6 +1,5 @@
-import { Button, Modal, Form, Popconfirm, Descriptions } from 'antd';
-import React, { PropsWithChildren, useEffect, useState, useRef } from 'react';
-import type { ProFormInstance } from '@ant-design/pro-components';
+import { Button, Modal, Form, Popconfirm, Descriptions, Upload } from 'antd';
+import React, { PropsWithChildren, useEffect, useState, useRef, Children } from 'react';
 import {
   ProCard,
   ProForm,
@@ -10,23 +9,25 @@ import {
   StepsForm,
   EditableProTable,
   ActionType,
+
 } from '@ant-design/pro-components';
 import { message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import services from '@/services/Api';
 import { log } from 'echarts/types/src/util/log.js';
-
+const { addDirUsingPost } = services.jiekoumulu
 // 数据来源
 const dataSource1 = [
   {
-    value: 0,
+    value: '数据服务',
     label: '数据服务',
   },
   {
-    value: 1,
+    value: '指标管理',
     label: '指标管理',
   },
   {
-    value: 2,
+    value: '决策引擎',
     label: '决策引擎',
   },
 ];
@@ -55,11 +56,11 @@ interface CreateFormState {
   name: string;
   /** Path */
   path: string;
-  /** 输入 body，JSON 类型 */
+  /** 请求body，JSON 类型 */
   requestBodyList: Record<string, any>[];
-  /** 输入参数，JSON 类型 */
+  /** 请求参数，JSON 类型 */
   requestParamList: Record<string, any>[];
-  /** 输出参数，JSON 类型 */
+  /** 接口返回参数，JSON 类型 */
   responseList: Response[];
   /** 接口的来源,写死（数据服务、指标管理、决策引擎） */
   source: string;
@@ -151,10 +152,11 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
       width: 130,
       valueType: 'select',
       valueEnum: {
-        1: { text: 'query', status: '1' },
-        2: { text: 'header', status: '2' },
-        3: { text: 'body', status: '3' },
-        4: { text: 'path', status: '4' },
+        query: 'query',
+        body: 'body',
+        header: 'header',
+        path: 'path',
+
       },
       formItemProps: {
         rules: [{ required: true, message: '请选择数据类型' }],
@@ -165,6 +167,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
       dataIndex: 'dataType',
       width: 130,
       valueType: 'select',
+      //3-string 1-int 2-float 0-object 4-array
       valueEnum: {
         String: 'String',
         Int: 'Int',
@@ -181,9 +184,10 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
       dataIndex: 'isRequired',
       width: 100,
       valueType: 'select',
+      // 1-是 0-否
       valueEnum: {
-        true: { text: '是', status: 'Success' },
-        false: { text: '否', status: 'Error' },
+        1: { text: '是', status: 'Success' },
+        0: { text: '否', status: 'Error' },
       },
       formItemProps: {
         rules: [{ required: true, message: '请选择是否必填' }],
@@ -191,7 +195,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '默认值',
-      dataIndex: 'dftValue',
+      dataIndex: 'defValue',
       width: 110,
     },
     {
@@ -265,8 +269,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
       width: 100,
       valueType: 'select',
       valueEnum: {
-        true: { text: '是', status: 'Success' },
-        false: { text: '否', status: 'Error' },
+        1: { text: '是', status: 'Success' },
+        0: { text: '否', status: 'Error' },
       },
       formItemProps: {
         rules: [{ required: true, message: '请选择是否必填' }],
@@ -274,7 +278,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     },
     {
       title: '默认值',
-      dataIndex: 'dftValue',
+      dataIndex: 'defValue',
       width: 110,
     },
     {
@@ -380,8 +384,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
                 actionRef2.current?.addEditRecord?.({
                   id: Date.now().toString(),
                   name: '',
-                  type: 'String',
-                  required: false,
+                  dataType: 'String',
+                  isRequired: '是',
                   description: '',
                 }, {
                   parentKey: record.id, // 关键：指定父节点
@@ -485,8 +489,8 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
                 actionRef3.current?.addEditRecord?.({
                   id: Date.now().toString(),
                   name: '',
-                  type: 'String',
-                  required: false,
+                  dataType: 'String',
+                  // isRequired: false,
                   description: '',
                 }, {
                   parentKey: record.id, // 关键：指定父节点
@@ -538,25 +542,73 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
         title={title || '参数配置'}
         bordered
         headerBordered
+        // extra={[// 添加一个按钮，用于添加新的行
+        //   <Button
+        //     key="add"
+        //     type="primary"
+        //     onClick={() => {
+        //       console.log('actionref', actionRef);
+        //       actionRef.current?.addEditRecord?.({
+        //         id: Date.now().toString(),
+        //         name: '',
+        //         type: 'String',
+        //         isRequired: false,
+        //         description: '',
+        //         children: [],
+        //       });
+        //     }}
+        //     icon={<PlusOutlined />}
+        //   >
+        //     新增参数
+        //   </Button>,
+        //   <Button
+        //     style={{ marginLeft: 8 }}
+
+        //     key="import"
+        //     type="primary"
+        //     onClick={() => {
+        //       console.log('import');
+        //     }}
+        //     icon={<UploadOutlined />}
+        //   >
+        //     JSON数据导入
+        //   </Button>
+
+
+        // ]}
         extra={
-          <Button
-            type="primary"
-            onClick={() => {
-              console.log('actionref', actionRef);
-              actionRef.current?.addEditRecord?.({
-                id: Date.now().toString(),
-                name: '',
-                type: 'String',
-                required: false,
-                description: '',
-                children: [],
-              });
-            }}
-            icon={<PlusOutlined />}
-          >
-            新增
-          </Button>
-        }
+          <>
+            <Button
+              type="primary"
+              onClick={() => {
+                actionRef.current?.addEditRecord?.({
+                  id: Date.now().toString(),
+                  name: '',
+                  type: 'String',
+                  required: false,
+                  description: '',
+                  children: [],
+                });
+              }}
+              icon={<PlusOutlined />}
+            >
+              新增
+            </Button>
+            {title === '请求Body配置' || title === '返回参数配置' ? (
+              <Button
+                style={{ marginLeft: 8 }}
+
+                key="import"
+                type="primary"
+                onClick={() => {
+                  console.log('import');
+                }}
+                icon={<UploadOutlined />}
+              >
+                JSON数据导入
+              </Button>
+            ) : null}
+          </>}
         style={{ marginBottom: 24 }}
       >
         <EditableProTable
@@ -626,7 +678,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
 
       const current = form.setFieldsValue({
         name: record.name,
-        desc: record.description,
+        description: record.description,
         source: record.source,
         type: record.type,
         ip: record.ip,
@@ -643,8 +695,84 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
     } else {
       //新增
       console.log('新增');
+
     }
   }, [isEdit, record]);
+  const handleFinish = async () => {
+    try {
+      const values = await form.validateFields();
+      console.log('ttttttab', tableData);
+
+      const requestParamList = tableData.map((item) => {
+        return {
+          name: item.name,
+          position: item.position,
+          dataType: item.dataType === 'Object' ? 0 : item.dataType === 'Array' ? 4 : item.dataType === 'Int' ? 1 : item.dataType === 'Float' ? 2 : 3,
+          isRequired: parseInt(item.isRequired),
+          defValue: item.defValue,
+          description: item.description,
+        }
+      }) || []
+      const requestBodyList = requestBodyData.map((item) => {
+        return {
+          name: item.name,
+          dataType: item.dataType === 'Object' ? 0 : item.dataType === 'Array' ? 4 : item.dataType === 'Int' ? 1 : item.dataType === 'Float' ? 2 : 3,
+          isRequired: parseInt(item.isRequired),
+          description: item.description,
+          children: item.children.map((child: any) => {
+            return {
+              name: child.name,
+              dataType: child.dataType === 'Object' ? 0 : child.dataType === 'Array' ? 4 : child.dataType === 'Int' ? 1 : child.dataType === 'Float' ? 2 : 3,
+              isRequired: child.isRequired,
+              description: child.description,
+            }
+          })
+        }
+      })
+      const responseList = responseData.map((item) => {
+        return {
+          name: item.name,
+          dataType: item.dataType === 'Object' ? 0 : item.dataType === 'Array' ? 4 : item.dataType === 'Int' ? 1 : item.dataType === 'Float' ? 2 : 3,
+          // isRequired: item.isRequired,
+          description: item.description,
+          children: item.children.map((child: any) => {
+            return {
+              name: child.name,
+              // isRequired: child.isRequired,
+              description: child.description,
+              //3-string 1-int 2-float 0-object 4-array
+              dataType: child.dataType === 'Object' ? 0 : child.dataType === 'Array' ? 4 : child.dataType === 'Int' ? 1 : child.dataType === 'Float' ? 2 : 3
+            }
+          })
+        }
+      })
+
+      console.log('Success:', values, requestParamList, requestBodyList, responseList);
+      const data = {
+        ...values,
+        timeout: parseInt(values.timeout),
+        status: 0,
+        requestParamList: requestParamList,
+        requestBodyList: requestBodyList,
+        responseList: responseList,
+      }
+      console.log('dataaaaaaaa', data);
+
+      const res = await addDirUsingPost({
+        ...data
+      })
+      console.log('注册resss', res);
+
+      if (res.code === 100200) {
+        message.success('创建成功');
+        onCancel()
+      } else {
+        message.error(res.msg);
+      }
+    } catch (error) {
+      message.error('创建失败');
+    }
+  }
   // 转换 treeData 为 ProFormSelect 需要的格式
   const options = convertTreeToOptions(treeData);
   return (
@@ -654,15 +782,51 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
         layout='horizontal'  // 设置为水平布局
         labelCol={{ span: 7 }}  // 设置标签宽度
         wrapperCol={{ span: 18 }}  // 设置输入框宽度
-        submitter={false}
         form={form}
+        submitter={false}
 
+        initialValues={isEdit ? record : undefined}
       >
         <StepsForm
-          onFinish={async () => {
-            // await waitTime(1000);
-            message.success('提交成功');
+          submitter={{
+            render: (props, doms) => {
+              console.log('props', props, doms);
+
+              const currentStep = props.step;
+              // const isLastStep = currentStep === (props.step?.length || 0) - 1;
+
+              return [
+                <Button key="cancel" onClick={onCancel}>
+                  取消
+                </Button>,
+                !currentStep && (
+                  <Button
+                    key="next"
+                    type="primary"
+                    onClick={async () => {
+                      try {
+                        await props.form?.validateFields();
+                        props.form?.submit()
+                      } catch (error) {
+                        message.error('请填写完整信息后再进行下一步');
+                      }
+                    }}
+                  >
+                    下一步
+                  </Button>
+                ),
+                currentStep > 0 && (
+                  <Button key="prev" onClick={() => props.onPre?.()}>
+                    上一步
+                  </Button>
+                ),
+                <Button key="submit" type="primary" onClick={handleFinish}>
+                  保存并退出
+                </Button>,
+              ];
+            },
           }}
+          // onFinish={handleFinish}
           formProps={{
             form: form,// 添加form属性
             layout: 'horizontal',
@@ -723,7 +887,7 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
 
             <ProFormTextArea
               label="接口描述"
-              name="desc"
+              name="description"
               width="md"
               placeholder="请输入备注"
             />
@@ -784,6 +948,10 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
               width="md"
               placeholder="请输入超时时间"
               rules={[{ required: true }]}
+              // number类型
+              fieldProps={{
+                type: 'number',
+              }}
             />
           </StepsForm.StepForm>
 

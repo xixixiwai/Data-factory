@@ -1,17 +1,17 @@
 declare namespace dataFactory {
-  type addDataAssetFieldUsingPOSTParams = {
-    assetsId: number;
-    chName: string;
-    dataStandardId?: string;
-    description?: string;
-    enName: string;
-  };
-
   type AddDataAssetsDTO = {
     chName: string;
     daFieldList: DaFieldList[];
     description: string;
     directoryIds: string;
+    enName: string;
+  };
+
+  type AddFieldDTO = {
+    assetsId: number;
+    chName: string;
+    dataStandardId?: string;
+    description?: string;
     enName: string;
   };
 
@@ -139,14 +139,6 @@ declare namespace dataFactory {
     id: number;
   };
 
-  type updateDataAssetFieldUsingPUTParams = {
-    chName: string;
-    dataStandardId?: string;
-    description?: string;
-    enName: string;
-    id: number;
-  };
-
   type UpdateDataAssetsDTO = {
     chName?: string;
     description?: string;
@@ -154,6 +146,14 @@ declare namespace dataFactory {
     enName?: string;
     id?: number;
     updateDaFieldLists?: UpdateDaFieldList[];
+  };
+
+  type UpdateFieldDTO = {
+    chName: string;
+    dataStandardId?: string;
+    description?: string;
+    enName: string;
+    id: number;
   };
 
   type updateStatusUsingPUTParams = {

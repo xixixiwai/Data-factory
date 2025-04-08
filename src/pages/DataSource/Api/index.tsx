@@ -124,7 +124,52 @@ export default function ApiManagement() {
           onClick={async () => {
             console.log('record详细', record);
             setDetailModalVisible(true);
-            setDetailData(record);
+            setDetailData({
+              ...record,
+              requestParamList: record.requestParamList?.map((item: any) => ({
+                ...item,
+                isRequired: item.isRequired === 1 ? '是' : '否',
+                dataType: item.dataType === 0
+                  ? 'Object'
+                  : item.dataType === 1
+                    ? 'Int'
+                    : item.dataType === 2
+                      ? 'Float'
+                      : item.dataType === 3
+                        ? 'String'
+                        : item.dataType === 4
+                          ? 'Array'
+                          : '',
+              })),
+              requestBodyList: record.requestBodyList?.map((item: any) => ({
+                ...item,
+                dataType: item.dataType === 0
+                  ? 'Object'
+                  : item.dataType === 1
+                    ? 'Int'
+                    : item.dataType === 2
+                      ? 'Float'
+                      : item.dataType === 3
+                        ? 'String'
+                        : item.dataType === 4
+                          ? 'Array'
+                          : '',
+              })),
+              responseList: record.responseList?.map((item: any) => ({
+                ...item,
+                dataType: item.dataType === 0
+                  ? 'Object'
+                  : item.dataType === 1
+                    ? 'Int'
+                    : item.dataType === 2
+                      ? 'Float'
+                      : item.dataType === 3
+                        ? 'String'
+                        : item.dataType === 4
+                          ? 'Array'
+                          : '',
+              }))
+            });
             console.log('detailData', detailData);
 
             console.log('详细数据', record);
@@ -640,6 +685,7 @@ export default function ApiManagement() {
               title: '是否必填',
               dataIndex: 'isRequired',
               key: 'isRequired',
+
             },
             {
               title: '默认请求参数',
@@ -670,6 +716,7 @@ export default function ApiManagement() {
               title: '数据类型',
               dataIndex: 'dataType',
               key: 'dataType',
+
             },
             {
               title: '参数说明',

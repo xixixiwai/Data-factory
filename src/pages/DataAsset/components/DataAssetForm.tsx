@@ -2,10 +2,11 @@ import React, { PropsWithChildren, useEffect, useState, useRef } from 'react';
 import { Modal, Form, Input, Button, TreeSelect, message, Select, } from 'antd';
 import { ProForm, EditableProTable, ProColumns, ActionType } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
-import { addDataAssetFieldUsingPost, deleteDataAssetFieldUsingDelete, addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut, updateDataAssetUsingPut } from '@/services/DataAsset/zichanguanli';
+import { updateDataAssetFieldUsingPut, addDataAssetFieldUsingPost, deleteDataAssetFieldUsingDelete, addDataAssetUsingPost, queryDataAssetListUsingPost, queryDirectoryListUsingGet, updateStatusUsingPut, updateDataAssetUsingPut } from '@/services/DataAsset/zichanguanli';
 import services from '@/services/Directory';
 const { getTreeUsingGet, getDirectoryUsingGet, getResourcesByIdsUsingGet } = services.muluguanli;
 import services1 from '@/services/Catalog'
+import { log } from 'echarts/types/src/util/log.js';
 const { queryDataStandardUsingPost } = services1.shujubiaozhunguanli;
 
 interface CreateFormProps {
@@ -105,13 +106,13 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       }));
 
       const updateDaFieldLists = dataSource.map((field) => ({
-        assetsId: dataSource[0].assetsId,
+        assetsId: record.id,
+        id: field.id,
         chName: field.chName,
         enName: field.enName,
         description: field.description,
         // dataStandardId: field.dataStandardId,
         dataStandardId: field.dataStandardId,
-        id: field.id,
       }))
       // 准备请求参数
       const params1 = {
@@ -388,7 +389,9 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
       setDirectoryData(directories);
 
       // 初始化字段数据
-      setDataSource(record.dataFieldList || []);
+      // setDataSource(record.dataFieldList || []);
+      // 初始化字段数据时过滤掉临时ID（假设真实ID为数字）
+      setDataSource(record.dataFieldList.filter(field => typeof field.id === 'number'));
     } else {
       // 新增
 
@@ -486,20 +489,23 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = ({ modalVisible
           }}
           editable={{
             onSave: async (key, row) => {
-              console.log('保存', row, record.dataFieldList[0].assetsId);
-
+              console.log('row.id', row.id);
+              // 调用新增接口
               await addDataAssetFieldUsingPost({
-                assetsId: record.dataFieldList[0].assetsId,
-                ...row,
-              }).then(() => {
-                actionRef.current?.reload(); // 刷新表格
-              })
+                assetsId: record.id,
+                chName: row.chName,
+                enName: row.enName,
+                description: row.description,
+                dataStandardId: row.dataStandardId,
+              });
+
+              // 刷新表格
+              actionRef.current?.reload();
             },
             onDelete: (key) => {
               setDataSource(prev => prev.filter(item => item.id === key));
               actionRef.current?.reload(); // 刷新表格
             },
-
           }}
         />
       </ProForm>
