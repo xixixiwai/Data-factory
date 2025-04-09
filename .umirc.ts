@@ -9,9 +9,9 @@ export default defineConfig({
 
   proxy: {
     '/api':{
-      'target': 'http://192.168.183.83:8088',
+      // 'target': 'http://192.168.183.83:8088',
       // 'target': 'http://192.168.239.83:8088',
-      // 'target': 'http://192.168.57.83:8088',
+      'target': 'http://192.168.57.83:8088',
       'changeOrigin': true,
       'pathRewrite': { '^/api': '' },
       'timeout': 30000,

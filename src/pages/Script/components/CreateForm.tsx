@@ -1,4 +1,4 @@
-import { Modal, Form, Input, Button, Upload, message, Select,Checkbox } from 'antd';
+import { Modal, Form, Input, Button, Upload, message, Select, Checkbox } from 'antd';
 import React, { useState } from 'react';
 import { PlusCircleOutlined, UploadOutlined } from '@ant-design/icons';
 
@@ -59,14 +59,7 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
     return Promise.resolve();
   };
 
-  // 文件上传前校验
-  const beforeUpload = (file) => {
-    if (file.type !== 'text/python') {
-      message.error('只能上传Python文件');
-      return false;
-    }
-    return false;
-  };
+
 
   // 保存文件列表
   const handleChange = ({ fileList: newFileList }) => {
@@ -138,9 +131,26 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
     >
       <Form
         form={form}
-        layout="vertical"
         onFinish={handleFinish}
+        layout='horizontal'
       >
+        <Form.Item
+          label="文件上传"
+          name="file"
+          rules={[
+            { required: true, message: '请上传文件' },
+          ]}
+        >
+          <Upload
+            // beforeUpload={beforeUpload}//
+            onChange={handleChange}
+            fileList={fileList}// 保存文件列表
+            accept=".py"
+          >
+            <Button icon={<UploadOutlined />}>上传文件</Button>
+          </Upload>
+        </Form.Item>
+
         <Form.Item
           label="脚本名称"
           name="scriptName"
@@ -192,22 +202,6 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
           <Input placeholder="请输入函数名" />
         </Form.Item>
 
-        <Form.Item
-          label="文件上传"
-          name="file"
-          rules={[
-            { required: true, message: '请上传文件' },
-          ]}
-        >
-          <Upload
-            beforeUpload={beforeUpload}
-            onChange={handleChange}
-            fileList={fileList}
-            accept=".py"
-          >
-            <Button icon={<UploadOutlined />}>点击上传</Button>
-          </Upload>
-        </Form.Item>
 
         <div style={{ margin: '16px 0' }}>
           <h3>输入参数</h3>
