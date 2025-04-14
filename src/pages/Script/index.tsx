@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Layout, Tree, TreeSelect, TreeDataNode, Form, Card, Table } from 'antd';
+import { Descriptions, Divider, Layout, Tree, TreeSelect, TreeDataNode, Form, Card, Table, Input } from 'antd';
 import { ProTable, ActionType } from '@ant-design/pro-components';
 import { Tag, Button, message, Modal } from 'antd';
 import CreateForm from './components/CreateForm';
@@ -60,7 +60,15 @@ export default function ScriptManagement() {
     requestParams: [],
     responseParams: []
   }); // 用于存储当前行的数据（编辑操作）
+  const [isEdit, setIsEdit] = useState<boolean>(false); // 是否是编辑状态
   const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false); // 编辑表单弹窗
+  const [currentRecord, setCurrentRecord] = useState<DetailData | null>(null); // 当前操作的记录
+  //测试模态框
+  const [testModalVisible, setTestModalVisible] = useState<boolean>(false); // 测试表单弹窗
+  const [testParams, setTestParams] = useState<Record<string, any>>({});
+  const [testResult, setTestResult] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
   // 定义表格列
   const columns = [
     {
@@ -72,12 +80,14 @@ export default function ScriptManagement() {
           style={{ cursor: 'pointer', color: 'blue' }}
           onClick={() => {
             setDetailModalVisible(true);
+            console.log('详细数据', detailData);
             setDetailData({
               ...record,
               requestParams: record.requestParams
                 ? JSON.parse(record.requestParams).map((item: any) => ({
                   ...item,
-                  dataInType: item.dataInType === 1 ? 'Int' : item.dataInType === 2 ? 'Float' : 'String'
+                  dataInType: item.dataInType === 1 ? 'Int' : item.dataInType === 2 ? 'Float' : 'String',
+                  isRequired: item.isRequired === 1 ? '是' : '否',
                 }))
                 : [],
               responseParams: record.responseParams
@@ -88,6 +98,8 @@ export default function ScriptManagement() {
                 : [],
 
             });
+
+
           }}
         >
           {text}
@@ -136,26 +148,27 @@ export default function ScriptManagement() {
             type='primary'
             key={'test'}
             onClick={async () => {
-              try {
-                const data = {
-                  // address: record.address,
-                  className: record.className,
-                  funcName: record.funcName,
-                  id: record.id,
-                  name: record.name,
-                  requestParams: record.requestParams,
-                }
-                console.log('测试data', data);
+              setTestModalVisible(true);
+              // setCurrentRecord(record);
+              setDetailData({
+                ...record,
+                requestParams: record.requestParams
+                  ? JSON.parse(record.requestParams).map((item: any, index: number) => ({
+                    ...item,
+                    name: `${item.name}-${index}`,
+                    dataInType: item.dataInType === 1 ? 'Int' : item.dataInType === 2 ? 'Float' : 'String',
+                    isRequired: item.isRequired === 1 ? '是' : '否',
+                  }))
+                  : [],
+                responseParams: record.responseParams
+                  ? JSON.parse(record.responseParams).map((item: any) => ({
+                    ...item,
+                    dataOutType: item.dataOutType === 1 ? 'Int' : item.dataOutType === 2 ? 'Float' : 'String'
+                  }))
+                  : [],
 
-                // const res = await testPythonScriptUsingPost({
-                //   ...data  
-                // })
-                // console.log('测试res', res);
-
-              } catch (error) {
-                message.error('测试失败');
-              }
-
+              });
+              console.log('recordcurrent', currentRecord);
             }}
           >
             测试
@@ -180,8 +193,27 @@ export default function ScriptManagement() {
             </Button>
             <Button
               type='primary'
-              key={'publish'}
-              onClick={async () => { }}>
+              key="edit"
+              onClick={async () => {
+                setIsEdit(true)
+                setCreateModalVisible(true);
+                setCurrentRecord({
+                  ...record,
+                  requestParams: record.requestParams
+                    ? JSON.parse(record.requestParams).map((item: any) => ({
+                      ...item,
+                      dataInType: item.dataInType === 1 ? 'Int' : item.dataInType === 2 ? 'Float' : 'String',
+                      isRequired: item.isRequired === 1 ? '是' : '否',
+                    }))
+                    : [],
+                  responseParams: record.responseParams
+                    ? JSON.parse(record.responseParams).map((item: any) => ({
+                      ...item,
+                      dataOutType: item.dataOutType === 1 ? 'Int' : item.dataOutType === 2 ? 'Float' : 'String'
+                    }))
+                    : [],
+                });
+              }}>
               编辑
             </Button>
           </>
@@ -189,7 +221,7 @@ export default function ScriptManagement() {
         record.status === '已发布' && (
           <Button
             type='primary'
-            key={'publish'}
+            key={'stop'}
             onClick={async () => {
               try {
                 const res = await batchUpdatePythonScriptStatusUsingPut({ ids: [record.id], method: 2 });
@@ -204,7 +236,7 @@ export default function ScriptManagement() {
         record.status === '待发布' && (
           <Button
             type='primary'
-            key={'publish'}
+            key="delete"
             onClick={async () => {
               try {
                 const res = await deletePythonScriptUsingDelete({ id: record.id });
@@ -326,7 +358,50 @@ export default function ScriptManagement() {
     setAdd1(true);
   };
 
+  // 测试按钮点击处理函数
+  // 测试按钮点击处理函数
+  const handleTest = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        id: detailData.id,
+        className: detailData.className,
+        funcName: detailData.funcName,
+        address: "D://",
+        name: detailData.name,
+        requestParams: detailData.requestParams,
+      };
 
+      // 转换 requestParams 中的字段
+      const transformedParams = {
+        ...params,
+        requestParams: params.requestParams.map((param) => {
+          return {
+            ...param,
+            // 从 testParams 中获取对应的值
+            dataInValue: testParams[param.name] || "", // 如果 testParams 中没有值，使用空字符串
+            // 转换 dataInType 为整数(1-Int、2-Float、3-String)
+            dataInType: param.dataInType === "Int" ? 1 : param.dataInType === "Float" ? 2 : 3,
+            // 转换 isRequired 为整数（"是" -> 1，"否" -> 0）
+            isRequired: param.isRequired === "是" ? 1 : 0,
+          };
+        }),
+      };
+
+      console.log('测试参数', transformedParams);
+
+      const res = await testPythonScriptUsingPost(transformedParams);
+      if (res.code === 100200) {
+        setTestResult(JSON.stringify(res.data, null, 2));
+      } else {
+        message.error(res.msg || '测试失败');
+      }
+    } catch (error) {
+      message.error('测试请求失败');
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchTreeData();
   }, [])
@@ -410,6 +485,7 @@ export default function ScriptManagement() {
                       },
                       onCancel() {
                         console.log('Cancel');
+
                       },
                     });
                   }}
@@ -467,10 +543,15 @@ export default function ScriptManagement() {
       <CreateForm
         onCancel={() => setCreateModalVisible(false)}
         modalVisible={createModalVisible}
+        isEdit={isEdit}
+        record={currentRecord}
       />
       {/* 详情模态框 */}
       <Modal
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false)
+
+        }}
         open={detailModalVisible}
         footer={null}
         title="脚本详情"
@@ -542,7 +623,91 @@ export default function ScriptManagement() {
         </Table>
 
       </Modal>
+      {/* 测试模态框 */}
+      <Modal
+        title="脚本测试"
+        open={testModalVisible}
+        onCancel={() => {
+          setTestModalVisible(false);
+          setTestParams({});
+          setTestResult('');
+        }}
+        footer={null}
+        width={1200}
 
+      >
+        <Layout style={{ background: '#fff' }}>
+          <Sider width={600} style={{ padding: 16, background: '#fff' }}>
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="脚本名称">{detailData.name}</Descriptions.Item>
+            </Descriptions>
+
+            <Divider orientation="left">输入参数</Divider>
+            <Table
+              columns={[
+                {
+                  title: '参数名称',
+                  dataIndex: 'paramInName',
+                  key: 'paramInName',
+                },
+                {
+                  title: '数据类型',
+                  dataIndex: 'dataInType',
+                  key: 'dataInType',
+                },
+                {
+                  title: '是否必填',
+                  dataIndex: 'isRequired',
+                  key: 'isRequired',
+                },
+                {
+                  title: '测试值',
+                  dataIndex: 'testValue',
+                  render: (_, record) => (
+                    <Input
+                      key={record.name} // 添加 key 属性
+                      value={testParams[record.name] || ''}
+                      onChange={(e) =>
+                        setTestParams(prev => ({
+                          ...prev,
+                          [record.name]: e.target.value
+                        }))
+                      }
+                    />
+                  )
+                }
+              ]}
+              dataSource={detailData.requestParams || []}
+              pagination={false}
+              size="small"
+            />
+
+
+
+            <Button
+              type="primary"
+              onClick={handleTest}
+              loading={loading}
+              style={{ marginTop: 16 }}
+            >
+              执行测试
+            </Button>
+          </Sider>
+
+          <Content style={{ padding: 16, borderLeft: '1px solid #f0f0f0' }}>
+            <h4>测试结果</h4>
+            <pre style={{
+              background: '#f6f8fa',
+              padding: 16,
+              borderRadius: 4,
+              maxHeight: 600,
+              overflow: 'auto'
+            }}>
+              {testResult || '等待测试结果...'}
+            </pre>
+          </Content>
+        </Layout>
+      </Modal>
     </>
   );
 }

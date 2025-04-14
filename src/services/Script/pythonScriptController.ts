@@ -2,41 +2,17 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** 新增Python脚本 POST /python-script/addPythonScript */
-export async function addPythonScriptUsingPost(
-  body: {
-    /** 脚本信息 */
-    addPythonScriptDTO: dataFactory.xinzengjiaobenxinxifengzhuanglei;
-  },
-  file?: File,
+/** 新增Python脚本信息 POST /python-script/add-script-info */
+export async function addScriptInfoUsingPost(
+  body: dataFactory.xinzengjiaobenxinxifengzhuanglei,
   options?: { [key: string]: any },
 ) {
-  const formData = new FormData();
-
-  if (file) {
-    formData.append('file', file);
-  }
-
-  Object.keys(body).forEach((ele) => {
-    const item = (body as any)[ele];
-
-    if (item !== undefined && item !== null) {
-      if (typeof item === 'object' && !(item instanceof File)) {
-        if (item instanceof Array) {
-          item.forEach((f) => formData.append(ele, f || ''));
-        } else {
-          formData.append(ele, JSON.stringify(item));
-        }
-      } else {
-        formData.append(ele, item);
-      }
-    }
-  });
-
-  return request<dataFactory.Robject>('/api/python-script/addPythonScript', {
+  return request<dataFactory.R>('/api/python-script/add-script-info', {
     method: 'POST',
-    data: formData,
-    requestType: 'form',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
     ...(options || {}),
   });
 }
@@ -152,6 +128,42 @@ export async function updatePythoScriptUsingPut(
 
   return request<dataFactory.Robject>('/api/python-script/updatePythonScript', {
     method: 'PUT',
+    data: formData,
+    requestType: 'form',
+    ...(options || {}),
+  });
+}
+
+/** 上传Python脚本文件 POST /python-script/upload-file */
+export async function uploadFileUsingPost(
+  body: {},
+  files?: File,
+  options?: { [key: string]: any },
+) {
+  const formData = new FormData();
+
+  if (files) {
+    formData.append('files', files);
+  }
+
+  Object.keys(body).forEach((ele) => {
+    const item = (body as any)[ele];
+
+    if (item !== undefined && item !== null) {
+      if (typeof item === 'object' && !(item instanceof File)) {
+        if (item instanceof Array) {
+          item.forEach((f) => formData.append(ele, f || ''));
+        } else {
+          formData.append(ele, JSON.stringify(item));
+        }
+      } else {
+        formData.append(ele, item);
+      }
+    }
+  });
+
+  return request<dataFactory.R>('/api/python-script/upload-file', {
+    method: 'POST',
     data: formData,
     requestType: 'form',
     ...(options || {}),

@@ -145,6 +145,12 @@ declare namespace dataFactory {
     method: number;
   };
 
+  type R = {
+    code?: number;
+    data?: Record<string, any>;
+    msg?: string;
+  };
+
   type Robject = {
     code?: number;
     data?: Record<string, any>;

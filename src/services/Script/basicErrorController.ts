@@ -2,41 +2,41 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** error GET /error */
-export async function errorUsingGet(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/error', {
+/** errorHtml GET /error */
+export async function errorHtmlUsingGet(options?: { [key: string]: any }) {
+  return request<dataFactory.ModelAndView>('/error', {
     method: 'GET',
     ...(options || {}),
   });
 }
 
-/** error PUT /error */
-export async function errorUsingPut(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/error', {
+/** errorHtml PUT /error */
+export async function errorHtmlUsingPut(options?: { [key: string]: any }) {
+  return request<dataFactory.ModelAndView>('/error', {
     method: 'PUT',
     ...(options || {}),
   });
 }
 
-/** error POST /error */
-export async function errorUsingPost(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/error', {
+/** errorHtml POST /error */
+export async function errorHtmlUsingPost(options?: { [key: string]: any }) {
+  return request<dataFactory.ModelAndView>('/error', {
     method: 'POST',
     ...(options || {}),
   });
 }
 
-/** error DELETE /error */
-export async function errorUsingDelete(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/error', {
+/** errorHtml DELETE /error */
+export async function errorHtmlUsingDelete(options?: { [key: string]: any }) {
+  return request<dataFactory.ModelAndView>('/error', {
     method: 'DELETE',
     ...(options || {}),
   });
 }
 
-/** error PATCH /error */
-export async function errorUsingPatch(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/error', {
+/** errorHtml PATCH /error */
+export async function errorHtmlUsingPatch(options?: { [key: string]: any }) {
+  return request<dataFactory.ModelAndView>('/error', {
     method: 'PATCH',
     ...(options || {}),
   });
