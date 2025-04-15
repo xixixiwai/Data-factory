@@ -541,7 +541,17 @@ export default function ScriptManagement() {
 
       {/* 创建表单的 Modal */}
       <CreateForm
-        onCancel={() => setCreateModalVisible(false)}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          setCurrentRecord(null)
+          setIsEdit(false)
+        }}
+        onSuccess={() => {
+          setCreateModalVisible(false)
+          setCurrentRecord(null)
+          setIsEdit(false)
+          actionRef.current?.reload()
+        }}
         modalVisible={createModalVisible}
         isEdit={isEdit}
         record={currentRecord}

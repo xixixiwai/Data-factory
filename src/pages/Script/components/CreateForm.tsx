@@ -17,6 +17,7 @@ interface CreateFormProps {
   onCancel: () => void;
   isEdit: boolean;
   record?: scriptData;
+  onSuccess?: () => void;
 }
 type DirectoryTreeDataNode = TreeDataNode & {
   id: number;
@@ -50,7 +51,7 @@ type outputData = {
   description?: string;
 }
 const CreateForm: React.FC<CreateFormProps> = (props) => {
-  const { modalVisible, onCancel, isEdit, record } = props;
+  const { modalVisible, onCancel, isEdit, record, onSuccess } = props;
   const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
   const actionRef = useRef<ActionType>();
   const [inputDataSource, setInputDataSource] = useState<readonly inputData[]>([]);
@@ -166,8 +167,10 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
       if (res.code === 100200) {
         message.success('提交成功');
         actionRef.current?.reload();
-        onCancel();
+        onSuccess();
       }
+      onCancel()
+
 
     } catch (e) {
       console.log('提交失败', e);
@@ -374,7 +377,7 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
 
         <EditableProTable<outputData>
           rowKey="id"
-          headerTitle="输入参数"
+          headerTitle="输出参数"
           name="responseParams"
           recordCreatorProps={
             {

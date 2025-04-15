@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Layout, TreeSelect,  } from 'antd';
+import { Layout, TreeSelect, } from 'antd';
 import { ProTable } from '@ant-design/pro-components';
 import { Tag, Button, message, Modal } from 'antd';
 import CreateForm from './components/CreateForm';
-import {PlusCircleOutlined} from '@ant-design/icons';
+import { PlusCircleOutlined } from '@ant-design/icons';
 const { Content, Sider } = Layout;
 
 // 定义 TreeSelect 的数据
@@ -25,7 +25,7 @@ const items = [
 // 定义表格列
 const columns = [
   {
-    title:'任务名称',
+    title: '任务名称',
     dataIndex: 'name',
     key: 'name',
   },
@@ -74,7 +74,7 @@ const data = Array.from({ length: 100 }).map((_, index) => ({
   category: `分类${index % 3}`,
   status: index % 3 === 0 ? '未发布' : index % 3 === 1 ? '已发布' : '已停用',
   updateTime: `2023-01-01 ${index % 24}:00:00`,
-  
+
 }))
 
 

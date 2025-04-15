@@ -167,7 +167,7 @@ const CodeForm: React.FC<PropsWithChildren<FormProps>> = (props) => {
         };
         res = await addCodeTableUsingPost(payload);
       }
-      if (res.code === 200) {
+      if (res.code === 100200) {
         message.success(isEdit ? '编辑成功' : '新增成功');
       } else {
         message.error(res.msg);
