@@ -1,4 +1,4 @@
-import { Button, Modal, Form, Popconfirm, Descriptions, Upload } from 'antd';
+import { Button, Modal, Form, Popconfirm, Descriptions, Upload, TreeSelect } from 'antd';
 import React, { PropsWithChildren, useEffect, useState, useRef, Children } from 'react';
 import {
   ProCard,
@@ -863,9 +863,19 @@ const CreateForm: React.FC<PropsWithChildren<CreateFormProps>> = (props) => {
               //     label: '分类2',
               //   },
               // ]}
-              options={options}
+              // options={options}
               rules={[{ required: true }]}
-            />
+            >
+              <TreeSelect
+                treeData={treeData}
+                placeholder="请选择接口分类"
+                showCheckedStrategy={TreeSelect.SHOW_PARENT}
+                treeDefaultExpandAll
+
+              />
+            </ProFormSelect>
+
+
 
             <ProFormText
               name="name"

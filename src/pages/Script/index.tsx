@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Descriptions, Divider, Layout, Tree, TreeSelect, TreeDataNode, Form, Card, Table, Input } from 'antd';
+import { Descriptions, Divider, Layout, Tree, TreeSelect, TreeDataNode, Form, Card, Table, Input, Select, Checkbox } from 'antd';
 import { ProTable, ActionType } from '@ant-design/pro-components';
 import { Tag, Button, message, Modal } from 'antd';
 import CreateForm from './components/CreateForm';
@@ -7,7 +7,7 @@ import { DownOutlined, PlusCircleOutlined } from '@ant-design/icons';
 const { Content, Sider } = Layout;
 import { searchListAndChildUsingGet, getDirectoryUsingGet } from '@/services/Directory/muluguanli'
 import services from '@/services/Script'
-const { addPythonScriptUsingPost, batchUpdatePythonScriptStatusUsingPut, classifyPythonScriptUsingPut, deletePythonScriptUsingDelete, queryPythonScriptUsingPost, testPythonScriptUsingPost, updatePythoScriptUsingPut } = services.pythonScriptController
+const { batchUpdatePythonScriptStatusUsingPut, classifyPythonScriptUsingPut, deletePythonScriptUsingDelete, queryPythonScriptUsingPost, testPythonScriptUsingPost, updatePythoScriptUsingPut } = services.pythonScriptController
 // 在顶部添加TreeDataNode类型定义
 type DirectoryTreeDataNode = TreeDataNode & {
   id: number;
@@ -53,6 +53,7 @@ export default function ScriptManagement() {
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false); // 创建表单弹窗
   const [add1, setAdd1] = useState<boolean>(false); // 添加脚本分类弹窗
   const [treeData, setTreeData] = useState<any[]>([]); // 脚本分类树形数据
+  const [treeData1, setTreeData1] = useState<any[]>([]); // TreeSelect
   //脚本数据
 
   const [selectedRows, setSelectedRows] = useState<DetailData[]>(); // 用于存储选中的行数据（批量操作）
@@ -68,8 +69,16 @@ export default function ScriptManagement() {
   const [testParams, setTestParams] = useState<Record<string, any>>({});
   const [testResult, setTestResult] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  //表格数据
+  const [data, setData] = useState<DetailData[]>([]);
+  //批量分类模态框
+  const [classifyModalVisible, setClassifyModalVisible] = useState<boolean>(false); // 批量分类表单弹窗
+  const [processedRecords, setProcessedRecords] = useState([]); // 添加状态变量
+  const [selectedScriptIds, setSelectedScriptIds] = useState([]); // 存储选中的脚本 ID
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // 存储选中的分类 ID
 
   // 定义表格列
+
   const columns = [
     {
       title: '脚本名称',
@@ -316,8 +325,7 @@ export default function ScriptManagement() {
       return '';
     }
   };
-
-  // 获取表格数据
+  // 修改 fetchTableData
   const fetchTableData = async (params: any) => {
     try {
       console.log('表格参数:', params);
@@ -328,7 +336,7 @@ export default function ScriptManagement() {
         pageSize: params.pageSize || 10,
       });
       // 对每个接口记录调用convertType获取分类名称
-      const processedRecords = await Promise.all(
+      const processed = await Promise.all(
         res.data.records.map(async (record: any) => {
           console.log('record', record);
 
@@ -339,13 +347,14 @@ export default function ScriptManagement() {
           };
         })
       );
-      console.log('processedRecords', processedRecords);
+      console.log('processedRecords', processed);
 
+      setProcessedRecords(processed); // 更新 processedRecords 状态
       return {
-        data: processedRecords,
+        data: processed,
         success: true,
         total: res.data.total,
-      }
+      };
     } catch (error) {
       console.error('获取表格数据失败:', error);
       return {
@@ -353,7 +362,7 @@ export default function ScriptManagement() {
         success: false,
       };
     }
-  }
+  };
   const handleAdd = () => {
     setAdd1(true);
   };
@@ -402,9 +411,34 @@ export default function ScriptManagement() {
       setLoading(false);
     }
   };
+  // 获取TreeSelect 的数据
+  const fetchTreeData1 = async () => {
+    try {
+      const res = await searchListAndChildUsingGet({ name: 'Python脚本' });
+
+      // 将后端返回的目录树数据转换为 TreeSelect 需要的格式
+      const convertTreeData = (data: any[]): any[] => {
+        return data.map((item) => {
+          return {
+            title: item.name,
+            key: item.id.toString(),
+            value: item.id.toString(),
+            children: item.children ? convertTreeData(item.children) : [],
+          };
+        });
+      };
+      console.log('目录树数据:', convertTreeData(res));
+      setTreeData1(convertTreeData(res || []));
+    } catch (error) {
+      console.error('获取目录树失败:', error);
+    }
+  };
   useEffect(() => {
     fetchTreeData();
+    fetchTreeData1();
   }, [])
+
+
   return (
     <>
       <Button
@@ -523,7 +557,14 @@ export default function ScriptManagement() {
                 >
                   批量停用
                 </Button>
-
+                <Button
+                  key="batchClassify"
+                  onClick={() => {
+                    setClassifyModalVisible(true)
+                  }}
+                >
+                  批量分类
+                </Button>
               </>
             }
           />
@@ -717,6 +758,85 @@ export default function ScriptManagement() {
             </pre>
           </Content>
         </Layout>
+      </Modal>
+      {/* 批量分类模态框 */}
+      <Modal
+        title="脚本批量分类"
+        open={classifyModalVisible}
+        onCancel={() => {
+          setClassifyModalVisible(false);
+          setSelectedScriptIds([]); // 清除选中的脚本 ID
+          setSelectedCategoryId(null); // 清除选中的分类 ID
+        }}
+        onOk={async () => {
+          try {
+            // 获取选中的脚本 ID 和分类 ID
+            const scriptIds = selectedScriptIds;
+            const categoryId = selectedCategoryId;
+
+            if (!scriptIds || scriptIds.length === 0) {
+              message.error('请选择脚本');
+              return;
+            }
+
+            if (!categoryId) {
+              message.error('请选择分类');
+              return;
+            }
+
+            // 调用接口
+            const res = await classifyPythonScriptUsingPut({
+              pythonScriptId: scriptIds, // 传递脚本 ID 列表
+              directoryId: categoryId, // 传递分类 ID
+            });
+
+            console.log('分类结果:', res);
+            if (res.code === 100200) {
+              message.success('批量分类成功');
+              setClassifyModalVisible(false);
+              setSelectedScriptIds([]); // 清除选中的脚本 ID
+              setSelectedCategoryId(null); // 清除选中的分类 ID
+              actionRef.current?.reload(); // 刷新表格数据
+            } else {
+              message.error('批量分类失败');
+            }
+          } catch (error) {
+            console.error('批量分类失败:', error);
+            message.error('批量分类失败');
+          }
+        }}
+      >
+        <Form
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 20 }}
+        >
+          <Form.Item label="脚本名称">
+            <Checkbox.Group
+              value={selectedScriptIds}
+              options={processedRecords.map(record => ({
+                label: record.name,
+                value: record.id,
+              }))}
+              onChange={(checkedValues) => {
+                setSelectedScriptIds(checkedValues); // 存储选中的脚本 ID
+                console.log('Selected script IDs:', checkedValues);
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="脚本分类">
+            <TreeSelect
+              value={selectedCategoryId}
+              treeData={treeData1}
+              placeholder="请选择脚本分类"
+              showCheckedStrategy={TreeSelect.SHOW_PARENT}
+              treeDefaultExpandAll
+              onChange={(value) => {
+                setSelectedCategoryId(value); // 存储选中的分类 ID
+                console.log('Selected category ID:', value);
+              }}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

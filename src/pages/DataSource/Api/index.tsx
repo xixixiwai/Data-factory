@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Descriptions, Divider, Form, Input, Layout, Row, Table, Tree, TreeDataNode } from 'antd';
+import { Checkbox, Descriptions, Divider, Form, Input, Layout, Row, Table, Tree, TreeDataNode, TreeSelect } from 'antd';
 import { ProTable, ActionType } from '@ant-design/pro-components';
 import { Tag, Button, message, Modal } from 'antd';
 import CreateForm from './components/CreateForm';
@@ -55,6 +55,8 @@ export default function ApiManagement() {
   const [createModalVisible, handleModalVisible] = useState<boolean>(false); // 创建表单弹窗
   const [addjk, setAddjk] = useState<boolean>(false); // 添加接口分类弹窗
   const [treeData, setTreeData] = useState<any[]>([]); // 接口分类树形数据
+  const [treeData1, setTreeData1] = useState<any[]>([]); // TreeSelect
+
   const [testModalVisible, setTestModalVisible] = useState(false);//控制接口测试模态框
   const [testData, setTestData] = useState<any[]>([]);//接口测试数据
   const [selectedRows, setSelectedRows] = useState<DetailData[]>(); // 用于存储选中的行数据（批量操作）
@@ -65,6 +67,12 @@ export default function ApiManagement() {
   const [testParams, setTestParams] = useState<Record<string, any>>({});
   const [testResult, setTestResult] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  //批量分类模态框
+  const [classifyModalVisible, setClassifyModalVisible] = useState<boolean>(false); // 批量分类表单弹窗
+  const [processedRecords, setProcessedRecords] = useState([]); // 添加状态变量
+  const [selectedScriptIds, setSelectedScriptIds] = useState([]); // 存储选中的接口 ID
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // 存储选中的分类 ID
+
   //详情框内数据
   const [detailData, setDetailData] = useState<Partial<DetailData>>({
     requestParamList: [],
@@ -402,6 +410,8 @@ export default function ApiManagement() {
           };
         })
       );
+      console.log('processedRecords', processedRecords);
+      setProcessedRecords(processedRecords);
       return {
         data: processedRecords,
 
@@ -412,9 +422,31 @@ export default function ApiManagement() {
       console.log('获取表格数据失败', error);
     }
   }
+  // 获取TreeSelect 的数据
+  const fetchTreeData1 = async () => {
+    try {
+      const res = await searchListAndChildUsingGet({ name: '企业信息' });
 
+      // 将后端返回的目录树数据转换为 TreeSelect 需要的格式
+      const convertTreeData = (data: any[]): any[] => {
+        return data.map((item) => {
+          return {
+            title: item.name,
+            key: item.id.toString(),
+            value: item.id.toString(),
+            children: item.children ? convertTreeData(item.children) : [],
+          };
+        });
+      };
+      console.log('目录树数据:', convertTreeData(res));
+      setTreeData1(convertTreeData(res || []));
+    } catch (error) {
+      console.error('获取目录树失败:', error);
+    }
+  };
   useEffect(() => {
     fetchTreeData()
+    fetchTreeData1()
   }, [])
 
   // 测试按钮点击处理函数
@@ -507,7 +539,6 @@ export default function ApiManagement() {
               onChange: (_, selectedRows) => setSelectedRows(selectedRows),
             }}
             request={fetchTableData}
-            actionRef={actionRef}
             headerTitle={
               <>
                 <Button
@@ -572,7 +603,14 @@ export default function ApiManagement() {
                 >
                   批量停用
                 </Button>
-
+                <Button
+                  key="batchClassify"
+                  onClick={() => {
+                    setClassifyModalVisible(true)
+                  }}
+                >
+                  批量分类
+                </Button>
               </>
             }
           />
@@ -593,7 +631,7 @@ export default function ApiManagement() {
       <CreateForm
         isEdit={isEdit}
         record={currentRecord}
-        treeData={treeData}
+        treeData={treeData1}
         onCancel={() => {
           handleModalVisible(false)
           setIsEdit(false)
@@ -866,6 +904,85 @@ export default function ApiManagement() {
             </pre>
           </Content>
         </Layout>
+      </Modal>
+      {/* 批量分类模态框 */}
+      <Modal
+        title="接口批量分类"
+        open={classifyModalVisible}
+        onCancel={() => {
+          setClassifyModalVisible(false);
+          setSelectedScriptIds([]); // 清除选中的接口 ID
+          setSelectedCategoryId(null); // 清除选中的分类 ID
+        }}
+        onOk={async () => {
+          try {
+            // 获取选中的接口 ID 和分类 ID
+            const scriptIds = selectedScriptIds;
+            const categoryId = selectedCategoryId;
+
+            if (!scriptIds || scriptIds.length === 0) {
+              message.error('请选择接口');
+              return;
+            }
+
+            if (!categoryId) {
+              message.error('请选择分类');
+              return;
+            }
+
+            // 调用接口
+            const res = await batchCategorizeUsingPost({
+              interfaceIds: scriptIds, // 传递接口ID 列表
+              directoryId: categoryId, // 传递分类 ID
+            });
+
+            console.log('分类结果:', res);
+            if (res.code === 100200) {
+              message.success('批量分类成功');
+              setClassifyModalVisible(false);
+              setSelectedScriptIds([]); // 清除选中的接口 ID
+              setSelectedCategoryId(null); // 清除选中的分类 ID
+              actionRef.current?.reload(); // 刷新表格数据
+            } else {
+              message.error('批量分类失败');
+            }
+          } catch (error) {
+            console.error('批量分类失败:', error);
+            message.error('批量分类失败');
+          }
+        }}
+      >
+        <Form
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 20 }}
+        >
+          <Form.Item label="接口名称">
+            <Checkbox.Group
+              value={selectedScriptIds}
+              options={processedRecords.map(record => ({
+                label: record.name,
+                value: record.id,
+              }))}
+              onChange={(checkedValues) => {
+                setSelectedScriptIds(checkedValues); // 存储选中的接口 ID
+                console.log('Selected script IDs:', checkedValues);
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="接口分类">
+            <TreeSelect
+              value={selectedCategoryId}
+              treeData={treeData1}
+              placeholder="请选择接口分类"
+              showCheckedStrategy={TreeSelect.SHOW_PARENT}
+              treeDefaultExpandAll
+              onChange={(value) => {
+                setSelectedCategoryId(value); // 存储选中的分类 ID
+                console.log('Selected category ID:', value);
+              }}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );
